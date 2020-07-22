@@ -7,7 +7,7 @@ from random import random
 from julia.tools import julia_py_executable
 
 from .globals import  WRAPPER_PATH
-from .runtime_setup import patch_environment
+#from .runtime_setup import patch_environment
 from subprocess import check_call, CalledProcessError
 
 # def get_api_obj():
@@ -64,14 +64,14 @@ def create_sysimg(outpath = None):
         #    raise Exception(f"Julia code did not execute:\n{eval_string}\n")
     
     julia_cmd = julia_py_executable()
-    patch_script_path = os.path.join(WRAPPER_PATH, "patch_openssl_jll.jl")    
+    #patch_script_path = os.path.join(WRAPPER_PATH, "patch_openssl_jll.jl")    
     compile_script_path = os.path.join(WRAPPER_PATH, "compile.jl")   
 
     # 1) Get path to append to LD_LIBRARY_PATH
-    compile_env = patch_environment()
+    #compile_env = patch_environment()
     # 2) Do the actual compiling
     try: 
-        check_call([julia_cmd, compile_script_path, out_filename], env=compile_env)
+        check_call([julia_cmd, compile_script_path, out_filename])
     except CalledProcessError as e:
         print("Could not compile the sysimage.")
         print(e)
