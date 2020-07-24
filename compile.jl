@@ -42,7 +42,7 @@ using Morbit
 
 @info "Compiling system image..."
 create_sysimage(
-    [:PyCall] ; #, :Morbit];
+    [:PyCall, :Morbit];
     sysimage_path = OUTFILENAME
 )
 
