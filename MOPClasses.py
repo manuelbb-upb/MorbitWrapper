@@ -6,12 +6,12 @@ Created on Thu Jul 16 10:31:11 2020
 @author: manuelbb
 """
 
-import os
 import numpy as np
 
 from .utilities import tprint, clean_args
 from .runtime_setup import julia_main
-from .OptOptionsClass import OptOptions
+
+import matplotlib.pyplot as plt
 
 class MOP():
     def __init__(self, lb = [], ub = [], array_of_expensive_funcs = [], 
@@ -31,6 +31,8 @@ class MOP():
         self.jl.lb = lb
         self.jl.ub = ub 
         self.obj = self.eval("mop = MixedMOP( lb = lb, ub = ub)")
+        
+        self.algo_config = None
     
     @property
     def n_objfs(self):
@@ -62,14 +64,19 @@ class MOP():
             tprint("Using default optimization settings.")
             config_obj = AlgoConfig()
         if len(x_0) == 0:
-            raise "Need a non-empty starting array-like."
+            raise "Need a non-empty starting array x_0."
+        self.algo_config = config_obj
+        
+        tprint("Starting optimization.")
+        self.algo_config.print_stop_info()
         
         x_0 = np.array(x_0).flatten()
         self.eval("optimize!")( config_obj.obj, self.obj, x_0 )
         
         if config_obj.obj.iter_data:
-            X = config_obj.obj.iter_data.x
-            FX = config_obj.obj.iter_data.f_x
+            X = self.eval("Morbit.unscale")( self.obj, self.algo_config.obj.iter_data.x )
+            FX = self.algo_config.obj.iter_data.f_x
+            self.algo_config.print_fin_info()
             return X,FX
         else:
             return 
@@ -91,6 +98,98 @@ class AlgoConfig():
         
         arg_dict = clean_args(arg_dict)
         self.obj = self.eval('AlgoConfig')( **arg_dict )
+        
+    def show(self):
+        print( self.obj )
+        
+    def print_stop_info(self):
+        print("\tStopping if either:")
+        print(f"\t\t• Number of iterations reaches {self.max_iter}.")
+        print(f"\t\t• Number of objective evalulations reaches {self.max_evals}.")
+        print(f"\t\t• Trust region radius Δ becomes smaller than Δ_min = {self.Δ_min}.")
+        print(f"\t\t• Trust region radius Δ becomes smaller than Δ_critical = {self.Δ_critical} AND")
+        print(f"\t\t  stepsize is smaller than {self.stepsize_min}.")
+        
+    def print_fin_info(self):
+        print(f"\tFinished after {self.n_iters} iterations and {self.n_evals} objective evaluations.")
+        print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
+        
+    def unscale_sites(self, list_of_scaled_site_arrays ):
+        return self.eval( "Morbit.unscale" )( self.obj.problem, list_of_scaled_site_arrays )
+    
+    def scatter2_objectives(self, indices = [0,1]):
+        if len(indices) == 0:
+            return 
+        else:
+            f1 = self.values[ indices[0], : ]
+            if len(indices) == 1:
+                f2 = np.zeros( f1.shape )
+            else:
+                f2 = self.values[ indices[1], :]
+            
+        fig, ax = plt.subplots()
+        
+        ax.scatter( f1, f2)
+        ax.plot( f1[self.iter_indices], f2[self.iter_indices], "kd-" )
+        
+    @property 
+    def iter_indices(self):
+        return self.obj.iter_data.iterate_indices - 1
+    
+    @property 
+    def sites(self):
+        pass    
+    
+    @property 
+    def iter_sites(self):
+        """List of numpy arrays corresponding to decision vectors that were centers of a trust region iteration."""
+        return self.unscale_sites( self.obj.iter_data.sites_db[ self.iter_indices ] )
+    
+    @property 
+    def values(self):
+        """Matrix of evaluation results, each column is an objective vector."""
+        return np.vstack( self.obj.iter_data.values_db ).transpose()
+
+    @property
+    def iter_values(self):
+        return self.values[ self.iter_indices ]
+    
+    @property
+    def n_iters(self):
+        len_iter_array = len( self.obj.iter_data.iterate_indices )
+        return 0 if len_iter_array == 0 else len_iter_array - 1
+    
+    @property
+    def n_evals(self):
+        return len( self.obj.iter_data.values_db )
+    
+    @property 
+    def ρ_array(self):
+        return self.obj.iter_data.ρ_array
+    
+    @property 
+    def n_acceptable_steps(self):
+        return np.sum( self.ρ_array >= self.ν_accept )
+    
+    @property
+    def n_successful_steps(self):
+        return np.sum( self.ρ_array >= self.ν_success )
+    
+    # UNICODE PROPERTIES THAT ARE IMPOSSIBLE TO ENTER IN SPYDER
+    @property 
+    def Δ_0(self):
+        return getattr(self.obj, "Δ₀")
+
+def get_property_function( propname ):
+    return property( lambda self: getattr( self.obj, propname ) )
+
+# Add properties that are read directly from the wrapped AlgoConfig Julia instance
+for property_name in ["max_iter", "max_evals", "n_vars", "n_exp", 
+                      "n_cheap", "max_model_points", "max_critical_loops","stepsize_min",
+                      "Δ_critical", "Δ_max", "Δ_min", "ε_crit", "ν_success", "ν_accept", 
+                      "γ_crit", "γ_grow", "γ_shrink", "γ_shrink_much"]:
+
+    setattr( AlgoConfig, property_name, get_property_function(property_name) )
         
         
         
