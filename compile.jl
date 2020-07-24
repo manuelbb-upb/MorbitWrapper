@@ -33,13 +33,12 @@ Pkg.add([
 
 using PyCall
 
-#=
+
 Pkg.add([
    Pkg.PackageSpec(url="/project_files/Morbit")
 ]);
 
 using Morbit
-=#
 
 @info "Compiling system image..."
 create_sysimage(
