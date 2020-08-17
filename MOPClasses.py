@@ -52,11 +52,16 @@ class MOP():
     def add_expensive_function(self, func, n_out = 1):        
         index = self.set_function(func)        
         self.eval( f'add_objective!(mop, func{index}_handle, :expensive, {n_out})')
-        return index
-        
+        return index    
+    
     def add_cheap_function( self, func, grad ):       
         index = self.set_function(func, grad )        
         self.eval( f'add_objective!(mop, func{index}_handle, grad{index}_handle)')
+        return index
+    
+    def add_batch_function(self, func, n_out = 1):
+        index = self.set_function( func )
+        self.eval( f'add_objective!(mop, func{index}_handle, :expensive, {n_out}, true)')
         return index
     
     def optimize( self, x_0 = [], config_obj = None ):
@@ -74,7 +79,8 @@ class MOP():
         self.eval("optimize!")( config_obj.obj, self.obj, x_0 )
         
         if config_obj.obj.iter_data:
-            X = self.eval("Morbit.unscale")( self.obj, self.algo_config.obj.iter_data.x )
+            #X = self.eval("Morbit.unscale")( self.obj, self.algo_config.obj.iter_data.x )
+            X = self.algo_config.obj.iter_data.x # already unscaled
             FX = self.algo_config.obj.iter_data.f_x
             self.algo_config.print_fin_info()
             return X,FX

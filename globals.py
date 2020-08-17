@@ -18,7 +18,7 @@ PATCH_ENV = True    # set to true if sysimage or Module relies on Plots
 
 PROJECT_FILES_PATH = "/project_files"
 MORBIT_PATH = join(PROJECT_FILES_PATH, "Morbit")       # Path to Morbit project folder
-MORBIT_SYS_IMG = join(PROJECT_FILES_PATH, "Morbit.so") # pre-compiled Julia sysimage to speed up initialization
+MORBIT_SYS_IMG = join(PROJECT_FILES_PATH, "pyMorbit.so") # pre-compiled Julia sysimage to speed up initialization
 WRAPPER_PATH = pathlib.Path(__file__).parent.absolute()
 
 def path_info():
