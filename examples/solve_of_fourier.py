@@ -35,7 +35,30 @@ def createFourierControl(h, T, fourier_params):
 
     return u, iu
 
-def cost_and_drag_objectives( fourier_params ):
+def createBergmannControl(h, T, paramVector ):
+    ''' 
+    Return the values of the function
+    A_1 * sin( 2*π*S_1*t ) * sin( 2*π*S_2*t - A_2 * sin(2*π*S_3*t) )
+    on a regular time grid from 0 to `T`with stepsize `h`.
+    paramVector contains the parameters
+    A_1, A_2, S_1, S_2, S_3 
+    in that order
+    '''
+    
+    A_1, A_2, S_1, S_2, S_3 = paramVector
+    nt = int(T / h + 1)
+    t = np.linspace(0, T, nt)
+    
+    def control( tau ):
+        return A_1 * np.sin( 2*np.pi*S_1*tau ) * np.sin( 2*np.pi*S_2*tau - A_2 * np.sin(2*np.pi*S_3*tau) )
+    
+    u = control(t)
+    iu = np.array([])
+    
+    return u,iu 
+                    
+
+def cost_and_drag_objectives( u, iu, T = 2.0, h = 0.1 ):
     dir_path = "/project_files/SolveOF/"
     
     # -------------------------------------------------------------------------------------------------------------------- #
@@ -67,10 +90,7 @@ def cost_and_drag_objectives( fourier_params ):
     Re = 100.0
     hFOAM = 0.01
     dimSpace = 2
-    
-    T = 2.0
-    h = 0.1
-      
+          
     uMin = uMax = uGrid = np.array([[]])
     
     dimZ = 2
@@ -84,7 +104,6 @@ def cost_and_drag_objectives( fourier_params ):
     of = ClassOpenFOAM(pathProblem, obs, pathOut, nProc, nInputs, dimInputs, iInputs, h=hFOAM, Re=Re, dimSpace=dimSpace)
     model = of.createOrUpdateModel(uMin=uMin, uMax=uMax, hWrite=h, dimZ=dimZ, uGrid=uGrid)
     
-    u, iu = createFourierControl(h, T, fourier_params )
     
     [y, z, t, _] = model.integrate(y0, u, 0.0)
     

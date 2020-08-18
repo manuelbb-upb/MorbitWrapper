@@ -111,7 +111,7 @@ class AlgoConfig():
     def print_stop_info(self):
         print("\tStopping if either:")
         print(f"\t\t• Number of iterations reaches {self.max_iter}.")
-        print(f"\t\t• Number of objective evalulations reaches {self.max_evals}.")
+        print(f"\t\t• Number of objective evaluations reaches {self.max_evals}.")
         print(f"\t\t• Trust region radius Δ becomes smaller than Δ_min = {self.Δ_min}.")
         print(f"\t\t• Trust region radius Δ becomes smaller than Δ_critical = {self.Δ_critical} AND")
         print(f"\t\t  stepsize is smaller than {self.stepsize_min}.")

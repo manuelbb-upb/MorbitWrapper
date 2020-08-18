@@ -7,7 +7,6 @@ Created on Wed Jul 15 16:25:44 2020
 """
 
 from .MOPClasses import MOP, AlgoConfig
-from .sysimg import create_sysimg 
 
 from .globals import path_info, set_MORBIT_PATH, set_MORBIT_SYS_IMG, get_MORBIT_PATH, get_MORBIT_SYS_IMG
 
