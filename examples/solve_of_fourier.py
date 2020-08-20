@@ -1,6 +1,4 @@
 from SolveOF.OpenFOAM.classesOpenFOAM import ClassOpenFOAM, ClassObservable
-from SolveOF.QuaSiModO import createSequence
-from SolveOF.visualization import plot
 
 import numpy as np
 import os 
