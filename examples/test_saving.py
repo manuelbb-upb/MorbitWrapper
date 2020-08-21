@@ -146,9 +146,9 @@ def cost_and_drag_objectives( u, iu,pathOut ):
     return np.array([cost_u, drag], dtype=float)
 
 if __name__ == "__main__":
-    mop = mw.MOP( lb = lb, ub = ub )
-    mop.add_batch_function(batch_simulation, 2)
+    #mop = mw.MOP( lb = lb, ub = ub )
+    #mop.add_batch_function(batch_simulation, 2)
     
-    x, y = mop.optimize(x_0, opt)
+    #x, y = mop.optimize(x_0, opt)
     
     opt.save( os.path.join( Path.home(), now().strftime("results_%d_%h_%y_%H_%M_%S.jld" ) ) )
