@@ -185,6 +185,12 @@ class AlgoConfig():
     @property 
     def Δ_0(self):
         return getattr(self.obj, "Δ₀")
+    
+    def save(self, filename = None):
+        self.eval("save")( self.opj, filename)
+        
+    def load(self, filename):
+        self.obj = self.eval("load")(filename)
 
 def get_property_function( propname ):
     return property( lambda self: getattr( self.obj, propname ) )

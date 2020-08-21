@@ -13,6 +13,8 @@ import MorbitWrapper as mw
 
 import numpy as np
 import os 
+from pathlib import Path
+from datetime.datetime import now
 import tempfile
 from multiprocessing import Pool, cpu_count
 
@@ -147,3 +149,5 @@ if __name__ == "__main__":
     mop.add_batch_function(batch_simulation, 2)
     
     x, y = mop.optimize(x_0, opt)
+    
+    opt.save( os.path.join( Path.home(), now.strftime("results_%d_%h_%y_%H_%M_%S.jld" ) ) )
