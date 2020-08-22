@@ -4,7 +4,7 @@ Basic functionalities of the [original module](https://github.com/manuelbb-upb/M
 Note that the only difference is, that `Δ_0` is the inital trust region radius in Python because it is easier to type.
 
 ## Basic usage 
-Refer to the examples subfolder for more involved examples.
+See the examples subfolder for more involved examples.
 ```python
 import MorbitWrapper as mw
 
