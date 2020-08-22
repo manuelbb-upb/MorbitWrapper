@@ -19,11 +19,17 @@ now = datetime.now
 import tempfile
 from multiprocessing import Pool, cpu_count
 
-n_processes = 4 #cpu_count()    # Number of cores to use in ParallelMode
+n_processes = 4 #cpu_count()    # max number of openfoam processes (see nProc too)
 
+# ----------------------------------
 # MOP Solver Configuration
+#-----------------------------------
 n_vars = 2 # 2 for simple Bergmann Control (sine) or 5 for more complex control
-opt = mw.AlgoConfig( max_evals = 20, Δ_0 = .1 )
+opt = mw.AlgoConfig( 
+        max_evals = 30, 
+        Δ_0 = .1, 
+        all_objective_descent = True 
+)
 lb = np.zeros(n_vars, dtype = float)
 ub = np.array( [30.0, 2*np.pi] ) # np.array([30, 30, 2*np.pi, 2*np.pi, 2*np.pi])
 x_0 = np.array( [4.0, 1.0/120] )
@@ -33,7 +39,7 @@ x_0 = np.array( [4.0, 1.0/120] )
 # -------------------------------------------------------------------------------------------------------------------- #
 pathProblem = os.path.abspath( '/project_files/SolveOF/OpenFOAM/problems/cylinder' )
 
-nProc = 2
+nProc = 2 # cores per operfoam process
 
 nInputs = 1
 dimInputs = 1
@@ -150,5 +156,8 @@ if __name__ == "__main__":
     mop.add_batch_function(batch_simulation, 2)
     
     x, y = mop.optimize(x_0, opt)
-    
+
+    # save `opt` because it does contain all iteration data (sites, values etc.)
+    # sites are in opt.obj.iter_data.sites_db
+    # evaluations in opt.obj.iter_data.values_db
     opt.save( os.path.join( Path.home(), now().strftime("results_%d_%h_%y_%H_%M_%S.jld" ) ) )
