@@ -26,7 +26,7 @@ n_processes = 2 #cpu_count()    # max number of openfoam processes (see nProc to
 #-----------------------------------
 n_vars = 2 # 2 for simple Bergmann Control (sine) or 5 for more complex control
 opt = mw.AlgoConfig( 
-        max_evals = 30, 
+        max_evals = 200, 
         Δ_0 = .1, 
         all_objective_descent = True 
 )

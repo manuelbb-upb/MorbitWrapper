@@ -187,10 +187,10 @@ class AlgoConfig():
         return getattr(self.obj, "Δ₀")
     
     def save(self, filename = None):
-        self.eval("save")( self.opj, filename)
+        self.eval("save_config")( self.opj, filename)
         
     def load(self, filename):
-        self.obj = self.eval("load")(filename)
+        self.obj = self.eval("load_config")(filename)
 
 def get_property_function( propname ):
     return property( lambda self: getattr( self.obj, propname ) )
