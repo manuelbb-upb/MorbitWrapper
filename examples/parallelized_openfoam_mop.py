@@ -19,7 +19,7 @@ now = datetime.now
 import tempfile
 from multiprocessing import Pool, cpu_count
 
-n_processes = 4 #cpu_count()    # max number of openfoam processes (see nProc too)
+n_processes = 2 #cpu_count()    # max number of openfoam processes (see nProc too)
 
 # ----------------------------------
 # MOP Solver Configuration
@@ -39,7 +39,7 @@ x_0 = np.array( [4.0, 1.0/120] )
 # -------------------------------------------------------------------------------------------------------------------- #
 pathProblem = os.path.abspath( '/project_files/SolveOF/OpenFOAM/problems/cylinder' )
 
-nProc = 2 # cores per operfoam process
+nProc = 4 # cores per operfoam process
 
 nInputs = 1
 dimInputs = 1
