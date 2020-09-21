@@ -187,7 +187,7 @@ class AlgoConfig():
         return getattr(self.obj, "Δ₀")
     
     def save(self, filename = None):
-        self.eval("save_config")( self.opj, filename)
+        self.eval("save_config")( self.obj, filename)
         
     def load(self, filename):
         self.obj = self.eval("load_config")(filename)
