@@ -7,6 +7,7 @@ Created on Thu Jul 16 16:40:36 2020
 """
 
 from os.path import join
+from .runtime_setup import initialize_julia
 import pathlib
 
 JULIA_MAIN = None    
@@ -49,6 +50,12 @@ def set_JULIA_MAIN( jl_instance ):
 def get_JULIA_MAIN():
     global JULIA_MAIN
     return JULIA_MAIN 
+
+def julia_main():
+    jl = get_JULIA_MAIN()
+    if not jl:
+        jl = initialize_julia()
+    return jl
 
 # READ ALL CONFIGURATION ARGUMENTS DIRECTLY FROM JULIA FILE
 import re

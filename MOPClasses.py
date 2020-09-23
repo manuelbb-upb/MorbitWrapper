@@ -9,7 +9,7 @@ Created on Thu Jul 16 10:31:11 2020
 import numpy as np
 
 from .utilities import tprint, clean_args
-from .runtime_setup import julia_main
+from .globals import julia_main
 
 import matplotlib.pyplot as plt
 

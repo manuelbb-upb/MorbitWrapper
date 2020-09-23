@@ -7,8 +7,7 @@ Created on Thu Jul 16 16:16:13 2020
 """
 
 import time
-from .globals import CONFIG_ARGS
-from .runtime_setup import julia_main
+from .globals import CONFIG_ARGS, julia_main
 
 TIME_FORMAT = "%H:%M:%S"
 

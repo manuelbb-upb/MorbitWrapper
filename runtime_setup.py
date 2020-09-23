@@ -6,7 +6,7 @@ Created on Thu Jul 16 16:12:14 2020
 @author: manuelbb
 """
 
-from .globals import get_JULIA_MAIN, set_JULIA_MAIN, get_MORBIT_PATH, get_MORBIT_SYS_IMG
+from .globals import set_JULIA_MAIN, get_MORBIT_PATH, get_MORBIT_SYS_IMG
 from .utilities import tprint
 
 from julia.api import Julia
@@ -45,8 +45,3 @@ def initialize_julia( ):
     set_JULIA_MAIN(Main)
     return Main
 
-def julia_main():
-    jl = get_JULIA_MAIN()
-    if not jl:
-        jl = initialize_julia()
-    return jl
