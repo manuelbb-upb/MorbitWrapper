@@ -21,7 +21,6 @@ MORBIT_PATH = join(PROJECT_FILES_PATH, "Morbit")       # Path to Morbit project 
 MORBIT_SYS_IMG = join("/user_files", "pyMorbit.so") # pre-compiled Julia sysimage to speed up initialization
 WRAPPER_PATH = pathlib.Path(__file__).parent.absolute()
 
-from .utilities import tprint
 from julia.api import Julia
 from os.path import isfile
 
@@ -60,7 +59,9 @@ def julia_main():
         jl = initialize_julia()
     return jl
 
-def initialize_julia( ):    
+def initialize_julia( ): 
+    from .utilities import tprint
+
     MORBIT_SYS_IMG = get_MORBIT_SYS_IMG()
     if isinstance(MORBIT_SYS_IMG, str) and isfile( MORBIT_SYS_IMG ):
         sysimage_path = MORBIT_SYS_IMG
