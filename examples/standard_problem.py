@@ -7,7 +7,7 @@ Created on Thu Jul 16 16:22:00 2020
 """
 import MorbitWrapper as mw
 
-mw.set_MORBIT_SYS_IMG("/project_files/MorbitWrapper/Morbit.so") # path to an up-to-date sysimage for fast startup
+#mw.set_MORBIT_SYS_IMG("/project_files/MorbitWrapper/Morbit.so") # path to an up-to-date sysimage for fast startup
 
 mop = mw.MOP(lb = [-4, -4], ub =[4,4])
 
