@@ -102,8 +102,8 @@ class AlgoConfig():
         else:
             arg_dict = kwargs
         
-        arg_dict = clean_args(arg_dict)
-        self.obj = self.eval('AlgoConfig')( **arg_dict )
+        #arg_dict = clean_args(arg_dict)
+        self.obj = clean_args( arg_dict )
         
     def show(self):
         print( self.obj )

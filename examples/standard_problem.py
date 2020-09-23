@@ -20,5 +20,5 @@ df2 = lambda x : [ 2*(x[0]+1), 2*(x[1]+1) ]
 mop.add_expensive_function(f1)
 mop.add_cheap_function(f2, df2)
 
-conf = mw.AlgoConfig( max_iter = 10, scale_values = False, all_objectives_descent = True )
+conf = mw.AlgoConfig(sampling_algorithm = "monte_carlo", max_iter = 20, scale_values = False, all_objectives_descent = True )
 x, y = mop.optimize([3.14, 4], conf)
