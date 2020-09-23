@@ -6,7 +6,7 @@ Created on Thu Jul 16 16:12:14 2020
 @author: manuelbb
 """
 
-from .globals import JL_MAIN, get_MORBIT_PATH, get_MORBIT_SYS_IMG, PATCH_ENV, WRAPPER_PATH
+from .globals import get_JULIA_MAIN, set_JULIA_MAIN, get_MORBIT_PATH, get_MORBIT_SYS_IMG
 from .utilities import tprint
 
 from julia.api import Julia
@@ -14,9 +14,7 @@ from julia.api import Julia
 from os.path import isfile
      
 
-def initialize_julia( ):
-    global JL_MAIN
-    
+def initialize_julia( ):    
     MORBIT_SYS_IMG = get_MORBIT_SYS_IMG()
     if isinstance(MORBIT_SYS_IMG, str) and isfile( MORBIT_SYS_IMG ):
         sysimage_path = MORBIT_SYS_IMG
@@ -44,10 +42,11 @@ def initialize_julia( ):
     
     tprint("Julia runtime all set up!")
     
-    JL_MAIN = Main
+    set_JULIA_MAIN(Main)
+    return Main
 
 def julia_main():
-    global JL_MAIN
-    if not JL_MAIN:
-        initialize_julia()
-    return JL_MAIN
+    jl = get_JULIA_MAIN()
+    if not jl:
+        jl = initialize_julia()
+    return jl

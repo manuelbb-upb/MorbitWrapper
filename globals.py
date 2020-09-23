@@ -9,7 +9,7 @@ Created on Thu Jul 16 16:40:36 2020
 from os.path import join
 import pathlib
 
-JL_MAIN = None    
+JULIA_MAIN = None    
 
 # PROJECT SETTINGS (Defaults for Singularity Container)
 #JULIA_RUNTIME = None    # None if 'julia' is available in PATH; else provide path to Julia installation
@@ -42,6 +42,13 @@ def get_MORBIT_PATH():
     global MORBIT_PATH
     return MORBIT_PATH
 
+def set_JULIA_MAIN( jl_instance ):
+    global JULIA_MAIN 
+    JULIA_MAIN = jl_instance
+
+def get_JULIA_MAIN():
+    global JULIA_MAIN
+    return JULIA_MAIN 
 
 # READ ALL CONFIGURATION ARGUMENTS DIRECTLY FROM JULIA FILE
 import re

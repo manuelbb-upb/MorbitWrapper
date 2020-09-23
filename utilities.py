@@ -8,6 +8,7 @@ Created on Thu Jul 16 16:16:13 2020
 
 import time
 from .globals import CONFIG_ARGS
+from .runtime_setup import julia_main
 
 TIME_FORMAT = "%H:%M:%S"
 
@@ -16,9 +17,12 @@ def tprint( *args, **kwargs ):
     print( *args, *kwargs )
     
 def clean_args( arg_dict ):
+    jl = julia_main()
     return_dict = {}
     for k,v in arg_dict.items():
         if k in CONFIG_ARGS.keys():
+            if k in ["rbf_kernel", "descent_method", "sampling_algorithm"]:
+                v = jl.eval(f'Symbol("{v}")')
             return_dict[k] = v      # TODO maybe also check datatypes here, would need a conversion map etc.
         elif k == "Δ_0":
             return_dict["Δ₀"] = v
