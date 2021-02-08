@@ -71,7 +71,6 @@ def initialize_julia( ):
         tprint(f"\tGlobal variable MORBIT_SYS_IMG = {MORBIT_SYS_IMG} not usable.\n\tYou can create a sysimage using 'create_sysimg()'.")
     
     tprint("MOP: Initializing Julia runtime. First time might take a bit.")
-    #from julia.api import Julia # NOTE import happens here so that the module is aware of environment variable changes
     
     try:
         Julia( compiled_modules = False, sysimage = sysimage_path) # we have to to this twice somehow because PyJulia cannot handle custom sysimages well
