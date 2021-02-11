@@ -11,10 +11,64 @@ import numpy as np
 #from typing import Callable, Union, List, Any, NewType
 #from typeguard import check_argument_types, check_type 
 
-from .utilities import tprint
 from .globals import julia_main
 
-import matplotlib.pyplot as plt
+try:
+    global plt
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    print("Matplotlib not found in current environment. Plotting will not work")
+    global plt 
+    plt = None 
+    
+class RbfConfig():
+    jl_py_props = {
+        "kernel" : "kernel",
+        "shape_parameter" : "shape_parameter",
+        "θ_enlarge_1" : "theta_enlarge_1",
+        "θ_enlarge_2" : "theta_enlarge_2",
+        "θ_pivot" : "theta_pivot",
+        "θ_pivot_cholesky" : "theta_pivot_cholesky",
+        "require_linear": "require_linear",
+        "max_model_points" : "max_model_points",
+        "use_max_points" : "use_max_points",
+        "sampling_algorithm" : "sampling_algorithm",
+        "constrained" : "constrained",
+        "max_evals" : "max_evals",
+    }
+    
+    py_jl_props = {v:k for (k,v) in jl_py_props.items() }
+    
+    def __init__(self, *args, **kwargs ):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+                
+        if len(args) == 1 and isinstance(args[0], dict):
+            arg_dict = args[0]
+        else:
+            arg_dict = kwargs
+            
+        init_props = { RbfConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() 
+                      if k in RbfConfig.py_jl_props.keys() }
+        self.jlObj = self.jl.RbfConfig(*[], **init_props )
+        
+
+# Set properties for RbfConfig class dynamically
+for jl_prop, py_prop in RbfConfig.jl_py_props.items():
+    
+    def get_property( jl_prop, py_prop ):
+        
+        @property
+        def new_property(self):
+            return self.jl.getfield( self.jlObj, self.jl.Symbol( jl_prop ) )
+        
+        @new_property.setter 
+        def new_property(self,val):
+            self.jl.setfield_b( self.jlObj, self.jl.Symbol(jl_prop), val )
+        
+        return new_property
+    setattr(RbfConfig, py_prop, get_property(jl_prop, py_prop))    
+
 
 class MOP():
     def __init__(self, lb = [], ub = []):
@@ -30,13 +84,13 @@ class MOP():
             self.lb = np.array(lb).flatten()
             self.ub = np.array(ub).flatten()
       
-        self.obj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
+        self.jlObj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
         
         self.algo_config = None
     
-    # @property
-    # def n_objfs(self):
-    #     return self.obj.n_exp + self.obj.n_cheap
+    @property
+    def n_objfs(self):
+        return self.jlObj.n_objfs 
     
     # def set_function( self, func, grad = None ):
     #     index = self.n_objfs + 1
@@ -64,28 +118,6 @@ class MOP():
     #     self.eval( f'add_objective!(mop, func{index}_handle, :expensive, {n_out}, true)')
     #     return index
     
-    # def optimize( self, x_0 = [], config_obj = None ):
-    #     if not config_obj or not isinstance( config_obj, AlgoConfig ):
-    #         tprint("Using default optimization settings.")
-    #         config_obj = AlgoConfig()
-    #     if len(x_0) == 0:
-    #         raise "Need a non-empty starting array x_0."
-    #     self.algo_config = config_obj
-        
-    #     tprint("Starting optimization.")
-    #     self.algo_config.print_stop_info()
-        
-    #     x_0 = np.array(x_0).flatten()
-    #     self.eval("optimize!")( config_obj.obj, self.obj, x_0 )
-        
-    #     if config_obj.obj.iter_data:
-    #         #X = self.eval("Morbit.unscale")( self.obj, self.algo_config.obj.iter_data.x )
-    #         X = self.algo_config.obj.iter_data.x # already unscaled
-    #         FX = self.algo_config.obj.iter_data.f_x
-    #         self.algo_config.print_fin_info()
-    #         return X,FX
-    #     else:
-    #         return 
         
 
 class AlgoConfig():
@@ -133,20 +165,19 @@ class AlgoConfig():
     def __init__(self, *args, **kwargs):
         self.jl = julia_main()
         self.eval = self.jl.eval
-        
-        #self.cfg_obj = self.eval("AlgoConfig()");
-        
+                
         if len(args) == 1 and isinstance(args[0], dict):
             arg_dict = args[0]
         else:
             arg_dict = kwargs
             
-        init_props = {AlgoConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() if k in dir(self)}
-        self.cfg_obj = self.jl.AlgoConfig(*[], **init_props )
+        init_props = {AlgoConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() 
+                      if k in AlgoConfig.py_jl_props.keys() }
+        self.jlObj = self.jl.AlgoConfig(*[], **init_props )
         
                 
     def show(self):
-        print( self.cfg_obj )
+        print( self.jlObj )
         
     def print_stop_info(self):
         print("\tStopping if either:")
@@ -161,7 +192,7 @@ class AlgoConfig():
     #     print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
         
     # def unscale_sites(self, list_of_scaled_site_arrays ):
-    #     return self.eval( "Morbit.unscale" )( self.obj.problem, list_of_scaled_site_arrays )
+    #     return self.eval( "Morbit.unscale" )( self.jlObj.problem, list_of_scaled_site_arrays )
     
     # def scatter2_objectives(self, indices = [0,1]):
     #     if len(indices) == 0:
@@ -180,7 +211,7 @@ class AlgoConfig():
         
     # @property 
     # def iter_indices(self):
-    #     return self.obj.iter_data.iterate_indices - 1
+    #     return self.jlObj.iter_data.iterate_indices - 1
     
     # @property 
     # def sites(self):
@@ -189,12 +220,12 @@ class AlgoConfig():
     # @property 
     # def iter_sites(self):
     #     """List of numpy arrays corresponding to decision vectors that were centers of a trust region iteration."""
-    #     return self.unscale_sites( self.obj.iter_data.sites_db[ self.iter_indices ] )
+    #     return self.unscale_sites( self.jlObj.iter_data.sites_db[ self.iter_indices ] )
     
     # @property 
     # def values(self):
     #     """Matrix of evaluation results, each column is an objective vector."""
-    #     return np.vstack( self.obj.iter_data.values_db ).transpose()
+    #     return np.vstack( self.jlObj.iter_data.values_db ).transpose()
 
     # @property
     # def iter_values(self):
@@ -202,16 +233,16 @@ class AlgoConfig():
     
     @property
     def n_iters(self):
-        len_iter_array = len( self.cfg_obj.iter_data.iterate_indices )
+        len_iter_array = len( self.jlObj.iter_data.iterate_indices )
         return 0 if len_iter_array == 0 else len_iter_array - 1
     
     @property
     def n_evals(self):
-        return len( self.cfg_obj.iter_data.values_db )
+        return len( self.jlObj.iter_data.values_db )
     
     # @property 
     # def ρ_array(self):
-    #     return self.obj.iter_data.ρ_array
+    #     return self.jlObj.iter_data.ρ_array
     
     # @property 
     # def n_acceptable_steps(self):
@@ -224,23 +255,24 @@ class AlgoConfig():
     # # UNICODE PROPERTIES THAT ARE IMPOSSIBLE TO ENTER IN SPYDER
     # @property 
     # def Δ_0(self):
-    #     return getattr(self.obj, "Δ₀")
+    #     return getattr(self.jlObj, "Δ₀")
     
     # def save(self, filename = None):
-    #     self.eval("save_config")( self.obj, filename)
+    #     self.eval("save_config")( self.jlObj, filename)
         
     # def load(self, filename):
-    #     self.obj = self.eval("load_config")(filename)
+    #     self.jlObj = self.eval("load_config")(filename)
 
 # def get_property_function( propname ):
 #     new_prop = property()
-#     new_prop.getter( lambda self: getattr( self.obj, propname ) )
+#     new_prop.getter( lambda self: getattr( self.jlObj, propname ) )
 
 # # Add properties that are read directly from the wrapped AlgoConfig Julia instance
 # for jl_prop, prop_tup in AlgoConfig.jl_py_props.items():
         
 #     setattr( AlgoConfig, property_name, get_property_function(property_name) )
         
+# Set properties for AlgoConfig class dynamically
 for jl_prop, prop_tuple in AlgoConfig.jl_py_props.items():
     
     def get_property( jl_prop, prop_tuple ):
@@ -248,11 +280,11 @@ for jl_prop, prop_tuple in AlgoConfig.jl_py_props.items():
         
         @property
         def new_property(self):
-            return self.jl.getfield( self.cfg_obj, self.jl.Symbol( jl_prop ) )
+            return self.jl.getfield( self.jlObj, self.jl.Symbol( jl_prop ) )
         
         @new_property.setter 
         def new_property(self,val):
-            self.jl.setfield_b( self.cfg_obj, self.jl.Symbol(jl_prop), val )
+            self.jl.setfield_b( self.jlObj, self.jl.Symbol(jl_prop), val )
         
         new_property.__doc__ = jl_type + ": " + prop_doc
         return new_property
