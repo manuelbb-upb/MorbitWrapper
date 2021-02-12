@@ -13,19 +13,7 @@ JULIA_MAIN = None
 # PROJECT SETTINGS (Defaults for Singularity Container)
 #JULIA_RUNTIME = None    # None if 'julia' is available in PATH; else provide path to Julia installation
 
-# PATCH_ENV = True    # set to true if sysimage or Module relies on Plots
-
-# PROJECT_FILES_PATH = "/project_files"
-# MORBIT_PATH = join(PROJECT_FILES_PATH, "Morbit")       # Path to Morbit project folder
 MORBIT_SYS_IMG = None
-# WRAPPER_PATH = pathlib.Path(__file__).parent.absolute()
-
-#from julia import Julia
-
-# def path_info():
-#     print("PROJECT_FILES_PATH: " + PROJECT_FILES_PATH )
-#     print("MORBIT_SYS_IMG: " + MORBIT_SYS_IMG )
-#     print("MORBIT_PATH: " + MORBIT_PATH )
 
 # some setter function to change module variables from the outside    
 
@@ -33,16 +21,8 @@ def set_MORBIT_SYS_IMG( new_val ):
     global MORBIT_SYS_IMG
     MORBIT_SYS_IMG = new_val
 
-# def set_MORBIT_PATH( new_val ):
-#     global MORBIT_PATH
-#     MORBIT_PATH = new_val
-    
 def get_MORBIT_SYS_IMG():
     return MORBIT_SYS_IMG
-
-# def get_MORBIT_PATH():
-#     global MORBIT_PATH
-#     return MORBIT_PATH
 
 def set_JULIA_MAIN( jl_instance ):
     global JULIA_MAIN 

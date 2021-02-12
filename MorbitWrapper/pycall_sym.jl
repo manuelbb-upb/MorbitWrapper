@@ -16,7 +16,7 @@ class SymStr():
 
 sym_str_py_type = PC.py"SymStr";
 
-PC.PyObject( s :: Symbol ) = PC.py"SymStr('$(string(s))')"o
+PC.PyObject( s :: Symbol ) = PC.py"SymStr($(string(s)))"o
 function PC.convert( ::Type{Symbol}, po :: PC.PyObject ) 
     sym_str = PC.pyisinstance( po, sym_str_py_type ) ? po.s : po;
     return Symbol(PC.convert(AbstractString, sym_str))

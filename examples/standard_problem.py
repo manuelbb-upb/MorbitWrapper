@@ -16,18 +16,19 @@ import MorbitWrapper as mw
 
 mop = mw.MOP(lb = [-4, -4], ub =[4,4])
 
-# def f1(x):
-#     return (x[0]-1)**2 + (x[1]-1)**2
+def f1(x):
+    return (x[0]-1)**2 + (x[1]-1)**2
     
-# f2 = lambda x : (x[0]+1)**2 + (x[1]+1)**2 
-# df2 = lambda x : [ 2*(x[0]+1), 2*(x[1]+1) ]
+f2 = lambda x : (x[0]+1)**2 + (x[1]+1)**2 
+df2 = lambda x : [ 2*(x[0]+1), 2*(x[1]+1) ]
 
-# mop.add_expensive_function(f1)
-# mop.add_cheap_function(f2, df2)
+mop.add_lagrange_objective(f1, degree=2)
+#mop.add_rbf_objective(f2)
+mop.add_cheap_objective(f2, grad = df2)
 
 conf = mw.AlgoConfig(
-    max_iter = 20, 
+    max_iter = 10, 
     all_objectives_descent = True 
 )
 
-#x, y = mop.optimize([3.14, 4], conf)
+#x, y = mw.optimize( mop, [3.0, 4.0], conf )

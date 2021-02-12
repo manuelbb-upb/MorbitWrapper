@@ -11,15 +11,65 @@ import numpy as np
 #from typing import Callable, Union, List, Any, NewType
 #from typeguard import check_argument_types, check_type 
 
+from inspect import isfunction
 from .globals import julia_main
-
+from uuid import uuid4
 try:
     global plt
     import matplotlib.pyplot as plt
 except ModuleNotFoundError:
     print("Matplotlib not found in current environment. Plotting will not work")
     global plt 
-    plt = None 
+    plt = None
+    
+def merge_kwargs(*args, **kwargs):
+    if len(args) == 1 and isinstance(args[0], dict):
+        arg_dict0 = args[0]
+    else:
+        arg_dict0 = {}
+    return { **arg_dict0, **kwargs }
+
+def get_kwargs(allowed_properties, *args, **kwargs ):
+    arg_dict = merge_kwargs(*args, **kwargs)
+    allowed_keys = allowed_properties.keys()
+    return { allowed_properties[k] : v for (k,v) in arg_dict.items() if k in allowed_keys }
+
+def batch_eval(*args, **kwargs):
+    arg_dict = merge_kwargs(*args, **kwargs)
+    return False if "batch_eval" not in arg_dict.keys() else arg_dict["batch_eval"]    
+
+def wrap_func( func ):
+    jl = julia_main()
+    # TODO this is a very hacky workaround...  
+    # either make Morbit accepy PyCall.PyObjects or 
+    # find a way to deepcopy a PyObject in the first argument of `pycall`
+    tmp_name = "tmp_" + str(uuid4()).replace("-","_")
+    exec( f"jl.{tmp_name} = func")
+    jl_func = jl.eval(f"""
+    function(x :: Union{{Real, Vector{{R}} where R<:Real}})
+        return PC.pycall(
+            {tmp_name},
+            PC.PyAny,
+            x
+        )
+    end
+    """)
+    return jl_func
+
+def wrap_funcs_in_dict( arg_dict ):
+    for k,v in arg_dict.items():
+        if isfunction(v):
+            arg_dict[k] = wrap_func( v )
+        elif (isinstance( v, list ) or isinstance(v, tuple ) or 
+              isinstance(v, np.ndarray)) and isfunction(v[0]):
+            arg_dict[k] = []
+            for vi in v:
+                arg_dict[k].append( wrap_func( vi ) )
+            
+    return arg_dict
+    
+# Define Configuration Class wrappers. They all have the same structure...
+# TODO Can we do this in a more dynamical/meta-y way? Do we want to?
     
 class RbfConfig():
     jl_py_props = {
@@ -43,33 +93,92 @@ class RbfConfig():
         self.jl = julia_main()
         self.eval = self.jl.eval
                 
-        if len(args) == 1 and isinstance(args[0], dict):
-            arg_dict = args[0]
-        else:
-            arg_dict = kwargs
-            
-        init_props = { RbfConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() 
-                      if k in RbfConfig.py_jl_props.keys() }
+        init_props = get_kwargs( RbfConfig.py_jl_props, *args, **kwargs )
         self.jlObj = self.jl.RbfConfig(*[], **init_props )
         
-
-# Set properties for RbfConfig class dynamically
-for jl_prop, py_prop in RbfConfig.jl_py_props.items():
+class LagrangeConfig():
+    jl_py_props = {
+        "degree" : "degree",
+        "θ_enlarge" : "theta_enlarge",
+        "ε_accept" : "eps_accept",
+        "Λ" : "lambda",
+        "allow_not_linear" : "allow_not_linear",
+        "optimized_sampling" : "optimized_sampling",
+        "use_saved_sites" : "use_saved_sites",
+        "io_lock" : "threading_lock",
+        "max_evals" : "max_evals"
+    }
+    py_jl_props = {v:k for (k,v) in jl_py_props.items() }
     
-    def get_property( jl_prop, py_prop ):
+    def __init__(self, *args, **kwargs ):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+                
+        init_props = get_kwargs( LagrangeConfig.py_jl_props, *args, **kwargs )
+        self.jlObj = self.jl.LagrangeConfig(*[], **init_props )
         
-        @property
-        def new_property(self):
-            return self.jl.getfield( self.jlObj, self.jl.Symbol( jl_prop ) )
+    
+class TaylorConfig():
+    jl_py_props = {
+        "degree" : "degree",
+        "gradients" : "gradients",
+        "hessians" : "hessians",
+        "jacobian" : "jacobian",
+        "max_evals" : "max_evals"
+    }
+    py_jl_props = { 
+        **{v:k for (k,v) in jl_py_props.items() },
+        "grad" : "gradients",
+        "gradient" : "gradients",
+        "hessian" : "hessians",
+    }                   
+    
+    def __init__(self, *args, **kwargs ):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+                
+        init_props = get_kwargs( TaylorConfig.py_jl_props, *args, **kwargs )
+        self.jlObj = self.jl.TaylorConfig(*[], **init_props )
         
-        @new_property.setter 
-        def new_property(self,val):
-            self.jl.setfield_b( self.jlObj, self.jl.Symbol(jl_prop), val )
-        
-        return new_property
-    setattr(RbfConfig, py_prop, get_property(jl_prop, py_prop))    
+ 
+class ExactConfig():
+    jl_py_props = {
+        "gradients" : "gradients",
+        "jacobian" : "jacobian",
+        "max_evals" : "max_evals"
+    }
+    py_jl_props = { 
+        **{v:k for (k,v) in jl_py_props.items() },
+        "grad" : "gradients",
+        "gradient" : "gradients",
+        "hessian" : "hessians",
+    } 
+    
+    def __init__(self, *args, **kwargs ):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+                
+        init_props = get_kwargs( ExactConfig.py_jl_props, *args, **kwargs )
+        self.jlObj = self.jl.ExactConfig(*[], **init_props )
 
+# Set properties for Config classes dynamically
+for ConfClass in [ExactConfig, RbfConfig, LagrangeConfig, TaylorConfig]:
+    for py_prop, jl_prop in ConfClass.py_jl_props.items():
+        
+        def get_property( jl_prop, py_prop ):
+            
+            @property
+            def new_property(self):
+                return self.jl.getfield( self.jlObj, self.jl.Symbol( jl_prop ) )
+            
+            @new_property.setter 
+            def new_property(self,val):
+                self.jl.setfield_b( self.jlObj, self.jl.Symbol(jl_prop), val )
+            
+            return new_property
+        setattr(ConfClass, py_prop, get_property(jl_prop, py_prop))    
 
+# Wrapper for 'MixedMOP' Julia class. Defines a problem.
 class MOP():
     def __init__(self, lb = [], ub = []):
 
@@ -79,46 +188,53 @@ class MOP():
         
         # 2) CONSTRUCT MixedMOP OBJECT IN JULIA
         if np.size( lb ) != np.size( ub ): 
-            raise "Lower bounds 'lb' and upper bounds 'ub' must have same size."
+            print("Lower bounds 'lb' and upper bounds 'ub' must have same size.")
+            return
         else:
             self.lb = np.array(lb).flatten()
             self.ub = np.array(ub).flatten()
       
         self.jlObj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
-        
-        self.algo_config = None
-    
+            
     @property
     def n_objfs(self):
         return self.jlObj.n_objfs 
     
-    # def set_function( self, func, grad = None ):
-    #     index = self.n_objfs + 1
-    #     exec( f"self.jl.func{index} = func;", {"self": self, "func": func, "index": index } )
-    #     self.jl.eval(f'func{index}_handle = function(x) func{index}(x) end')
+    def _prepare_args(self, allowed_properties, *args, **kwargs): 
+        arg_dict0 = get_kwargs(allowed_properties, *args, **kwargs)
+        arg_dict = wrap_funcs_in_dict(arg_dict0)
+        can_batch = batch_eval(*args, **kwargs) 
+        return arg_dict, can_batch
         
-    #     if grad:
-    #         exec( f"self.jl.grad{index} = grad;", {"self": self, "grad": grad, "index": index } )
-    #         self.jl.eval(f'grad{index}_handle = function(x) grad{index}(x) end')
+    def _add_objective(self, func, cfg, can_batch = False ):
+        self.jl.add_objective_b( self.jlObj, wrap_func( func ), cfg.jlObj, batch_eval = can_batch )
+        return self.n_objfs
         
-    #     return index
+    def add_cheap_objective(self, func, *args, **kwargs):
+        arg_dict, batch_eval = self._prepare_args(ExactConfig.py_jl_props, *args, **kwargs)
+        cfg = ExactConfig(*[], **arg_dict) 
+        return self._add_objective(func, cfg, batch_eval)
     
-    # def add_expensive_function(self, func, n_out = 1):        
-    #     index = self.set_function(func)        
-    #     self.eval( f'add_objective!(mop, func{index}_handle, :expensive, {n_out})')
-    #     return index    
+    def add_lagrange_objective(self, func, *args, **kwargs):
+        arg_dict, batch_eval = self._prepare_args(LagrangeConfig.py_jl_props, *args, **kwargs)
+        cfg = LagrangeConfig(*[], **arg_dict) 
+        return self._add_objective(func, cfg, batch_eval)
     
-    # def add_cheap_function( self, func, grad ):       
-    #     index = self.set_function(func, grad )        
-    #     self.eval( f'add_objective!(mop, func{index}_handle, grad{index}_handle)')
-    #     return index
+    def add_taylor_objective(self, func, *args, **kwargs):
+        arg_dict, batch_eval = self._prepare_args(TaylorConfig.py_jl_props, *args, **kwargs)
+        cfg = TaylorConfig(*[], **arg_dict) 
+        return self._add_objective(func, cfg, batch_eval)
     
-    # def add_batch_function(self, func, n_out = 1):
-    #     index = self.set_function( func )
-    #     self.eval( f'add_objective!(mop, func{index}_handle, :expensive, {n_out}, true)')
-    #     return index
+    def add_rbf_objective(self, func, *args, **kwargs):
+        arg_dict, batch_eval = self._prepare_args(RbfConfig.py_jl_props, *args, **kwargs)
+        cfg = RbfConfig(*[], **arg_dict) 
+        return self._add_objective(func, cfg, batch_eval)
     
-        
+    def add_cheap_vec_objective(self, func, *args, batch_eval = False, n_out = -1, **kwargs ):
+        pass
+
+    # TODO vector (and batch) objectives
+            
 
 class AlgoConfig():
     """A wrapper class for the AlgoConfig structure provided by Morbit in Julia.
@@ -189,11 +305,8 @@ class AlgoConfig():
         
     def print_fin_info(self):
         print(f"\tFinished after {self.n_iters} iterations and {self.n_evals} objective evaluations.")
-    #     print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
-        
-    # def unscale_sites(self, list_of_scaled_site_arrays ):
-    #     return self.eval( "Morbit.unscale" )( self.jlObj.problem, list_of_scaled_site_arrays )
-    
+        print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
+     
     # def scatter2_objectives(self, indices = [0,1]):
     #     if len(indices) == 0:
     #         return 
@@ -209,28 +322,30 @@ class AlgoConfig():
     #     ax.scatter( f1, f2)
     #     ax.plot( f1[self.iter_indices], f2[self.iter_indices], "kd-" )
         
-    # @property 
-    # def iter_indices(self):
-    #     return self.jlObj.iter_data.iterate_indices - 1
+    @property 
+    def iter_data(self):
+        return self.jlObj.iter_data 
     
-    # @property 
-    # def sites(self):
-    #     pass    
+    @property 
+    def iter_indices(self):
+        return self.iter_data.iterate_indices - 1
     
-    # @property 
-    # def iter_sites(self):
-    #     """List of numpy arrays corresponding to decision vectors that were centers of a trust region iteration."""
-    #     return self.unscale_sites( self.jlObj.iter_data.sites_db[ self.iter_indices ] )
+    @property 
+    def eval_sites(self):
+        return self.iter_data.sites_db 
     
-    # @property 
-    # def values(self):
-    #     """Matrix of evaluation results, each column is an objective vector."""
-    #     return np.vstack( self.jlObj.iter_data.values_db ).transpose()
-
-    # @property
-    # def iter_values(self):
-    #     return self.values[ self.iter_indices ]
+    @property 
+    def eval_vectors(self): 
+        return self.iter_data.values_db 
     
+    @property
+    def iter_sites(self):
+        return self.eval_sites[ self.iter_indices ]
+    
+    @property
+    def iter_vectors(self):
+        return self.eval_vectors[ self.iter_indices ]
+        
     @property
     def n_iters(self):
         len_iter_array = len( self.jlObj.iter_data.iterate_indices )
@@ -240,22 +355,17 @@ class AlgoConfig():
     def n_evals(self):
         return len( self.jlObj.iter_data.values_db )
     
-    # @property 
-    # def ρ_array(self):
-    #     return self.jlObj.iter_data.ρ_array
+    @property 
+    def ρ_array(self):
+        return self.jlObj.iter_data.ρ_array
     
-    # @property 
-    # def n_acceptable_steps(self):
-    #     return np.sum( self.ρ_array >= self.ν_accept )
+    @property 
+    def n_acceptable_steps(self):
+        return np.sum( self.ρ_array >= self.ν_accept )
     
-    # @property
-    # def n_successful_steps(self):
-    #     return np.sum( self.ρ_array >= self.ν_success )
-    
-    # # UNICODE PROPERTIES THAT ARE IMPOSSIBLE TO ENTER IN SPYDER
-    # @property 
-    # def Δ_0(self):
-    #     return getattr(self.jlObj, "Δ₀")
+    @property
+    def n_successful_steps(self):
+        return np.sum( self.ρ_array >= self.ν_success )
     
     # def save(self, filename = None):
     #     self.eval("save_config")( self.jlObj, filename)
@@ -263,14 +373,6 @@ class AlgoConfig():
     # def load(self, filename):
     #     self.jlObj = self.eval("load_config")(filename)
 
-# def get_property_function( propname ):
-#     new_prop = property()
-#     new_prop.getter( lambda self: getattr( self.jlObj, propname ) )
-
-# # Add properties that are read directly from the wrapped AlgoConfig Julia instance
-# for jl_prop, prop_tup in AlgoConfig.jl_py_props.items():
-        
-#     setattr( AlgoConfig, property_name, get_property_function(property_name) )
         
 # Set properties for AlgoConfig class dynamically
 for jl_prop, prop_tuple in AlgoConfig.jl_py_props.items():
