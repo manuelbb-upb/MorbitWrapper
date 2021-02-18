@@ -46,15 +46,30 @@ def wrap_func( func ):
     tmp_name = "tmp_" + str(uuid4()).replace("-","_")
     exec( f"jl.{tmp_name} = func")
     jl_func = jl.eval(f"""
-    function(x :: Union{{Real, Vector{{R}} where R<:Real}})
+    function(x)
         return PC.pycall(
             {tmp_name},
             PC.PyAny,
+            # Union{{ Real, Vector{{R}} where R<:Real, Vector{{Vector{{R}}}} where R<:Real }},
             x
         )
     end
     """)
     return jl_func
+
+def forbid_autodiff( arg_dict ):
+    jl = julia_main()
+    for g in ["grad", "gradient", "gradients"]:
+        if g in arg_dict.keys() and (arg_dict[g] == "autodiff" or arg_dict[g] == jl.Symbol("autodiff")):
+            print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
+            arg_dict.pop(g)
+    else:
+        print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
+
+    
+    arg_dict["gradients"] = jl.Symbol("fdm")
+    return
+            
 
 def wrap_funcs_in_dict( arg_dict ):
     for k,v in arg_dict.items():
@@ -206,34 +221,61 @@ class MOP():
         can_batch = batch_eval(*args, **kwargs) 
         return arg_dict, can_batch
         
-    def _add_objective(self, func, cfg, can_batch = False ):
+    def _add_objective_jl(self, func, cfg, can_batch = False ):
         self.jl.add_objective_b( self.jlObj, wrap_func( func ), cfg.jlObj, batch_eval = can_batch )
         return self.n_objfs
+    
+    def _add_objective(self, func, cfgClass, *args, **kwargs):
+        arg_dict, batch_eval = self._prepare_args(cfgClass.py_jl_props, *args, **kwargs)
+        cfg = cfgClass(*[], **arg_dict) 
+        return self._add_objective_jl(func, cfg, batch_eval)
+    
+    def _add_vec_objective_jl(self, func, cfg, can_batch = False, n_out = -1):
+        self.jl.add_vector_objective_b( 
+            self.jlObj, 
+            wrap_func( func ), 
+            cfg.jlObj, 
+            n_out = n_out, 
+            batch_eval = can_batch 
+        )
+        return self.n_objfs
         
+    def _add_vec_objective(self, func, cfgClass, *args, n_out = -1, **kwargs ):
+        if n_out < 1:
+            print("Please specify number of function outputs with kwargs `n_out`.")
+            return
+                
+        arg_dict, batch_eval = self._prepare_args(cfgClass.py_jl_props, *args, **kwargs)
+        if cfgClass == ExactConfig:
+            forbid_autodiff(arg_dict) 
+            
+        cfg = cfgClass(*[], **arg_dict) 
+        
+        return self._add_vec_objective_jl(func, cfg, batch_eval, n_out)
+    
     def add_cheap_objective(self, func, *args, **kwargs):
-        arg_dict, batch_eval = self._prepare_args(ExactConfig.py_jl_props, *args, **kwargs)
-        cfg = ExactConfig(*[], **arg_dict) 
-        return self._add_objective(func, cfg, batch_eval)
+        return self._add_objective(func, ExactConfig, *args, **kwargs )
     
     def add_lagrange_objective(self, func, *args, **kwargs):
-        arg_dict, batch_eval = self._prepare_args(LagrangeConfig.py_jl_props, *args, **kwargs)
-        cfg = LagrangeConfig(*[], **arg_dict) 
-        return self._add_objective(func, cfg, batch_eval)
+        return self._add_objective(func, LagrangeConfig, *args, **kwargs )
     
     def add_taylor_objective(self, func, *args, **kwargs):
-        arg_dict, batch_eval = self._prepare_args(TaylorConfig.py_jl_props, *args, **kwargs)
-        cfg = TaylorConfig(*[], **arg_dict) 
-        return self._add_objective(func, cfg, batch_eval)
+        return self._add_objective(func, TaylorConfig, *args, **kwargs )
     
     def add_rbf_objective(self, func, *args, **kwargs):
-        arg_dict, batch_eval = self._prepare_args(RbfConfig.py_jl_props, *args, **kwargs)
-        cfg = RbfConfig(*[], **arg_dict) 
-        return self._add_objective(func, cfg, batch_eval)
-    
-    def add_cheap_vec_objective(self, func, *args, batch_eval = False, n_out = -1, **kwargs ):
-        pass
+        return self._add_objective(func, RbfConfig, *args, **kwargs )
 
-    # TODO vector (and batch) objectives
+    def add_cheap_vec_objective(self, func, *args, **kwargs ):
+        return self._add_vec_objective( func, ExactConfig, *args, **kwargs )
+    
+    def add_lagrange_vec_objective(self, func, *args, **kwargs ):
+        return self._add_vec_objective( func, LagrangeConfig, *args, **kwargs )
+    
+    def add_taylor_vec_objective(self, func, *args, **kwargs ):
+        return self._add_vec_objective( func, TaylorConfig, *args, **kwargs )
+    
+    def add_rbf_vec_objective(self, func, *args, **kwargs ):
+        return self._add_vec_objective( func, RbfConfig, *args, **kwargs )
             
 
 class AlgoConfig():

@@ -77,7 +77,7 @@ def createBergmannControl( paramVector ):
     ''' 
     Return the values of the function
     A_1 * sin( 2*π*S_1*t ) 
-    on a regular time grid from 0 to `T`with stepsize `h`.
+    on a regular time grid from 0 to `T` with stepsize `h`.
     paramVector contains the parameters
     A_1, S_1
     in that order
@@ -134,7 +134,7 @@ def batch_simulation( list_of_param_vecs ):
             ret_values = p.map( simulation, list_of_param_vecs ) 
             return ret_values                    
 
-def cost_and_drag_objectives( u, iu,pathOut ):
+def cost_and_drag_objectives( u, iu, pathOut ):
    
 #    # Model creation
     obs = ClassObservable(forceCoeffsPatches=forceCoeffsPatches, ARef=ARef, lRef=lRef, writeY=writeY, writeGrad=writeGrad)

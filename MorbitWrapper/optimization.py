@@ -11,7 +11,12 @@ from .MOPClasses import MOP, AlgoConfig
 from .globals import julia_main
 import numpy as np 
 
-def optimize( problem, x_0, cfg = None ):
+def optimize( problem, x_0, cfg = None, debug_level = "Warn" ):
+    # set debug level
+    jl = cfg.eval(f"""
+    import Logging;
+    Logging.global_logger( Logging.ConsoleLogger(stderr, Logging.{debug_level}));
+    """)
     
     # if not isinstance( problem, MOP ):
     #     tprint("Invalid `problem`... returning.")
@@ -19,9 +24,9 @@ def optimize( problem, x_0, cfg = None ):
     # if not cfg or not isinstance( cfg, AlgoConfig ):
     #     tprint("Using default optimization settings.")
     #     cfg = AlgoConfig()
-    # if len(x_0) == 0:
-    #     tprint("Need a non-empty starting array x_0.")
-    #     return         
+    if len(x_0) == 0:
+        tprint("Need a non-empty starting array x_0.")
+        return         
     tprint("Using default optimization settings.")
     cfg.print_stop_info() 
     

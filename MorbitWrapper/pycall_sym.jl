@@ -22,5 +22,8 @@ function PC.convert( ::Type{Symbol}, po :: PC.PyObject )
     return Symbol(PC.convert(AbstractString, sym_str))
 end
 PC.pytype_mapping(sym_str_py_type, Symbol);
+
+# not a good idea in general, I think, but usefull for keyword arguments:
+Base.convert( :: Type{Symbol}, s :: AbstractString ) = Symbol(s);
 nothing
 
