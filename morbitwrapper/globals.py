@@ -63,7 +63,6 @@ def initialize_julia( ):
     Main.include( os.path.join( os.path.dirname( __file__ ) , "pycall_sym.jl" ) )
     # loading MORBIT module
     #Main.using("Pkg")
-    #Main.eval(f'Pkg.activate("{get_MORBIT_PATH()}")') 
     tprint("Loading Morbit module. If no sysimage was provided this will take some time.")
     Main.using("Morbit")
     

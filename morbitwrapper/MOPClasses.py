@@ -8,9 +8,6 @@ Created on Thu Jul 16 10:31:11 2020
 
 import numpy as np
 
-#from typing import Callable, Union, List, Any, NewType
-#from typeguard import check_argument_types, check_type 
-
 from inspect import isfunction
 from .globals import julia_main
 from uuid import uuid4
@@ -41,7 +38,7 @@ def batch_eval(*args, **kwargs):
 def wrap_func( func ):
     jl = julia_main()
     # TODO this is a very hacky workaround...  
-    # either make Morbit accepy PyCall.PyObjects or 
+    # either make Morbit accept PyCall.PyObjects or 
     # find a way to deepcopy a PyObject in the first argument of `pycall`
     tmp_name = "tmp_" + str(uuid4()).replace("-","_")
     exec( f"jl.{tmp_name} = func")
@@ -90,6 +87,7 @@ class RbfConfig():
     jl_py_props = {
         "kernel" : "kernel",
         "shape_parameter" : "shape_parameter",
+        "polynomial_degree" : "polynomial_degree",
         "θ_enlarge_1" : "theta_enlarge_1",
         "θ_enlarge_2" : "theta_enlarge_2",
         "θ_pivot" : "theta_pivot",
@@ -98,7 +96,7 @@ class RbfConfig():
         "max_model_points" : "max_model_points",
         "use_max_points" : "use_max_points",
         "sampling_algorithm" : "sampling_algorithm",
-        "constrained" : "constrained",
+        "sampling_algorithm2" : "sampling_allgorithm2",
         "max_evals" : "max_evals",
     }
     
@@ -119,8 +117,12 @@ class LagrangeConfig():
         "Λ" : "lambda",
         "allow_not_linear" : "allow_not_linear",
         "optimized_sampling" : "optimized_sampling",
-        "use_saved_sites" : "use_saved_sites",
-        "io_lock" : "threading_lock",
+        "save_path" : "save_path",
+        "io_lock" : "io_lock",
+        "algo1_solver" : "algo1_solver",
+        "algo2_solver" : "algo2_solver",
+        "algo1_max_evals" : "algo1_max_evals",
+        "algo2_max_evals" : "algo2_max_evals",
         "max_evals" : "max_evals"
     }
     py_jl_props = {v:k for (k,v) in jl_py_props.items() }
@@ -166,7 +168,6 @@ class ExactConfig():
         **{v:k for (k,v) in jl_py_props.items() },
         "grad" : "gradients",
         "gradient" : "gradients",
-        "hessian" : "hessians",
     } 
     
     def __init__(self, *args, **kwargs ):
@@ -195,7 +196,7 @@ for ConfClass in [ExactConfig, RbfConfig, LagrangeConfig, TaylorConfig]:
 
 # Wrapper for 'MixedMOP' Julia class. Defines a problem.
 class MOP():
-    def __init__(self, lb = [], ub = []):
+    def __init__(self, lb = [], ub = [], n_vars = -1):
 
         # 1) INITIALIZE COMPLETE JULIA ENVIRONMENT
         self.jl = julia_main() 
@@ -209,7 +210,13 @@ class MOP():
             self.lb = np.array(lb).flatten()
             self.ub = np.array(ub).flatten()
       
-        self.jlObj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
+        if np.size(lb) > 0:
+            self.jlObj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
+        elif np.size(lb) == 0 and n_vars > 0:
+            self.jlObj = self.jl.MixedMOP( n_vars )
+        else:
+            print("Number of variables must be specified for unconstrained problems.")
+            return
             
     @property
     def n_objfs(self):
@@ -286,35 +293,42 @@ class AlgoConfig():
     
     
     jl_py_props = {
-        "n_vars" : ("n_vars", "Int", "Number of decision variables (inferred)."),
-        "n_objfs" : ("n_objfs", "Int", "Number of objective functions (inferred)."),
-        "max_iter" : ("max_iter", "Int", "Maximum number of iterations."),
-        "count_nonlinear_iterations" : ("count_conlinear_iterations", "Boolean", "Count iterations if model is not fully linear."),
-        "max_evals" : ("max_evals", "Int", "Maximum number of objective evaluations (including AutoDiff and FiniteDiff evals)."),
-        "descent_method" : ("descent_method", "Symbol", "Method for step calculation ('steepest', 'ps', 'cg', 'ds')"),
-        "ideal_point" : ("ideal_point", "Vector{R} where R<:Real", "Utopia vector for image space subproblems."),
-        "image_direction" : ("image_direction", "Vector{R} where R<:Real", "Alternative to utopia vector."),
-        "θ_ideal_point" : ("theta_ideal_point", "Real", "Scaling factor for trust region radius in subproblem ideal point calculation."),
-        "all_objectives_descent" : ("all_objectives_descent", "Boolean", "Boolean Flag: Need descent in **all** surrogates?"),
-        "radius_update" : ("radius_update", "Symbol", "Radius update method ('standard' or 'steplength')"),
-        "μ" : ("mu", "Real", "Largest criticality factor for criticality test."),
-        "β" : ("beta", "Real", "Smaller criticality factor for criticality test."),
-        "ε_crit" : ("eps_crit", "Real", "Threshold for criticality test."),
-        "max_critical_loops" : ("max_critical_loops", "Int", "Maximum number of critical loops before break."),
-        "x_stop_function" : ("x_stop_function", "F where F<:Function", "Function returning Bool to stop depending on iterate value."),
-        "ν_success" : ("nu_success", "Real", "Large acceptance parameter."), # real  
-        "ν_accept" : ("nu_accept", "Real", "Small acceptance parameter."),  # real
-        "γ_crit" : ("gamma_crit", "Real", "Radius shrinking factor in criticality loop."),  # real
-        "γ_grow" : ("gamma_grow", "Real", "Radius growing factor."), # real
-        "γ_shrink" : ("gamma_shrink", "Real", "Radius shrinking factor for acceptable trial points."), # real
-        "γ_shrink_much" : ("gamma_shrink_much", "Real", "Severe radius shrinking factor"),
-        "Δ₀" : ("delta_init", "Real", "Initial trust region radius (relative to [0,1]^n if box constrained)."),  # real
-        "Δ_max" : ("delta_max", "Real", "Maximum trust region radius"),
-        "Δ_critical" : ("delta_critical", "Real", "Critical trust region radius - relative stopping test."),
-        "Δ_min" : ("delta_min", "Real", "Minimum trust region radius."),
-        "stepsize_min" : ("stepsize_min", "Real", "Relative stopping tolerance on iterates"),
-        "use_eval_database" : ("use_eval_db", "Boolean", "Boolean Flag: Store intermediate results."),
-        #"iter_data" : ("iter_data", Any, "Julia object storing iteration information."),
+        "max_evals" : ("max_evals", "(Int) Maximum number of objective evaluations (including AutoDiff and FiniteDiff evals)."),
+        "max_iter" : ("max_iter", "(Int) Maximum number of iterations."),
+        "γ_crit" : ("gamma_crit", "(Real) Radius shrinking factor in criticality loop."),
+        "max_critical_loops" : ("max_critical_loops", "(Int) Maximum number of critical loops before break."),
+        "ε_crit" : ("eps_crit", "(Real) Threshold for criticality test."),
+        "count_nonlinear_iterations" : ("count_conlinear_iterations", "(Boolean) Count iterations if model is not fully linear."),
+        "Δ₀" : ("delta_init", "Initial trust region radius (relative to [0,1]^n if box constrained)."),
+        "Δ_max" : ("delta_max", "Maximum trust region radius"),
+        "f_tol_rel" : ("f_tol_rel", ""),
+        "x_tol_rel" : ("x_tol_rel", ""),
+        "f_tol_abs" : ("f_tol_abs", ""),
+        "x_tol_abs" : ("x_tol_abs", ""),
+        "ω_tol_abs" : ("omega_tol_abs", ""),
+        "Δ_tol_rel" : ("delta_tol_rel", ""),
+        "ω_tol_abs" : ("omega_tol_abs", ""),
+        "Δ_tol_abs" : ("delta_tol_abs", ""),
+        "descent_method" : ("descent_method","Method for step calculation ('steepest_descent', 'ps', 'ds')"),
+        "strict_backtracking" : ("strict_backtracking", "Bool"),
+        "reference_direction" : ("reference_direction", "(Vector{<:Real}) Alternative to utopia vector."),
+        "reference_point" : ("reference_point", "(Vector{<:Real}) Utopia vector for image space subproblems."),
+        "max_ideal_point_problem_evals" : ("max_ideal_point_problem_evals", ""),
+        "max_ps_problem_evals" : ("max_ps_problem_evals", ""),
+        "max_ps_polish_evals" : ("max_ps_polish_evals", ""),
+        "ps_algo" : ("ps_algo", ""),
+        "ideal_point_algo" : ("ideal_point_algo", ""),
+        "ps_polish_algo" : ("ps_polish_algo",""),
+        "strict_acceptance_test" : ("strict_acceptance_test", ""),
+        "ν_success" : ("nu_success", "Large acceptance parameter."), # real  
+        "ν_accept" : ("nu_accept", "Small acceptance parameter."),  # real
+        "db" :("db", ""),
+        "μ" : ("mu", "Largest criticality factor for criticality test."),
+        "β" : ("beta", "Smaller criticality factor for criticality test."),
+        "radius_update_method" : ("radius_update_method", "(Symbol) Radius update method ('standard' or 'steplength')"),
+        "γ_grow" : ("gamma_grow", "Radius growing factor."), # real
+        "γ_shrink" : ("gamma_shrink", "Radius shrinking factor for acceptable trial points."), # real
+        "γ_shrink_much" : ("gamma_shrink_much", "Severe radius shrinking factor"),
     }
     
     # TODO this is a bit redundant...
@@ -420,7 +434,7 @@ class AlgoConfig():
 for jl_prop, prop_tuple in AlgoConfig.jl_py_props.items():
     
     def get_property( jl_prop, prop_tuple ):
-        prop_name, jl_type, prop_doc = prop_tuple
+        prop_name, prop_doc = prop_tuple
         
         @property
         def new_property(self):
@@ -430,7 +444,7 @@ for jl_prop, prop_tuple in AlgoConfig.jl_py_props.items():
         def new_property(self,val):
             self.jl.setfield_b( self.jlObj, self.jl.Symbol(jl_prop), val )
         
-        new_property.__doc__ = jl_type + ": " + prop_doc
+        new_property.__doc__ = prop_doc
         return new_property
     setattr(AlgoConfig, prop_tuple[0], get_property(jl_prop, prop_tuple))    
 
