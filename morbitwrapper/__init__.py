@@ -9,7 +9,8 @@ Created on Wed Jul 15 16:25:44 2020
 from .MOPClasses import RbfConfig, MOP, AlgoConfig
 from .optimization import optimize
 
-from .globals import set_MORBIT_SYS_IMG, get_MORBIT_SYS_IMG
+from .globals import set_MORBIT_SYS_IMG, get_MORBIT_SYS_IMG, set_JULIA_ENV
+from .globals import get_JULIA_ENV, set_JULIA_RUNTIME, get_JULIA_RUNTIME
 
 #NOTE
 # DONT make globals accessible from outside the module directly

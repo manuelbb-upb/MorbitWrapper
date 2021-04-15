@@ -211,7 +211,7 @@ class MOP():
             self.ub = np.array(ub).flatten()
       
         if np.size(lb) > 0:
-            self.jlObj = self.jl.MixedMOP(*[], **{"lb" : self.lb, "ub" : self.ub} )
+            self.jlObj = self.jl.MixedMOP(self.lb, self.ub)
         elif np.size(lb) == 0 and n_vars > 0:
             self.jlObj = self.jl.MixedMOP( n_vars )
         else:
@@ -284,8 +284,84 @@ class MOP():
     def add_rbf_vec_objective(self, func, *args, **kwargs ):
         return self._add_vec_objective( func, RbfConfig, *args, **kwargs )
             
+class GenericConfig():
+    def __init__(self, jlObj = None):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+        
+        if not jlObj:
+            jlObj = self.eval("Morbit.EmptyConfig()")
+            
+        self.jlObj = jlObj
+       
+    def show(self):
+        print( self.jlObj )
+        
+    def print_stop_info(self):
+        print("\tTODO: Stopping Info for new interface.")
+        # print(f"\t\t• Number of iterations reaches {self.max_iter}.")
+        # print(f"\t\t• Number of objective evaluations reaches {self.max_evals}.")
+        # print(f"\t\t• Trust region radius Δ becomes smaller than delta_min = {self.delta_min}.")
+        # print(f"\t\t• Trust region radius Δ becomes smaller than delta_critical = {self.delta_critical} AND")
+        # print(f"\t\t  stepsize is smaller than {self.stepsize_min}.")
+        
+    def print_fin_info(self):
+        print("\tTODO: Finishing Info for new interface.")
+        # print(f"\tFinished after {self.n_iters} iterations and {self.n_evals} objective evaluations.")
+        # print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
+             
+    # @property 
+    # def iter_data(self):
+    #     return self.jlObj.iter_data 
+    
+    # @property 
+    # def iter_indices(self):
+    #     return self.iter_data.iterate_indices - 1
+    
+    # @property 
+    # def eval_sites(self):
+    #     return self.iter_data.sites_db 
+    
+    # @property 
+    # def eval_vectors(self): 
+    #     return self.iter_data.values_db 
+    
+    # @property
+    # def iter_sites(self):
+    #     return self.eval_sites[ self.iter_indices ]
+    
+    # @property
+    # def iter_vectors(self):
+    #     return self.eval_vectors[ self.iter_indices ]
+        
+    # @property
+    # def n_iters(self):
+    #     len_iter_array = len( self.jlObj.iter_data.iterate_indices )
+    #     return 0 if len_iter_array == 0 else len_iter_array - 1
+    
+    # @property
+    # def n_evals(self):
+    #     return len( self.jlObj.iter_data.values_db )
+    
+    # @property 
+    # def ρ_array(self):
+    #     return self.jlObj.iter_data.ρ_array
+    
+    # @property 
+    # def n_acceptable_steps(self):
+    #     return np.sum( self.ρ_array >= self.ν_accept )
+    
+    # @property
+    # def n_successful_steps(self):
+    #     return np.sum( self.ρ_array >= self.ν_success )
+    
+    # def save(self, filename = None):
+    #     self.eval("save_config")( self.jlObj, filename)
+        
+    # def load(self, filename):
+    #     self.jlObj = self.eval("load_config")(filename)
 
-class AlgoConfig():
+class AlgoConfig( GenericConfig ):
     """A wrapper class for the AlgoConfig structure provided by Morbit in Julia.
     
     Initiliaze by passing a dict of options or pass the arguments as keyword=value pairs.
@@ -335,9 +411,7 @@ class AlgoConfig():
     py_jl_props = {v[0] : k for (k,v) in jl_py_props.items() }
     
     def __init__(self, *args, **kwargs):
-        self.jl = julia_main()
-        self.eval = self.jl.eval
-                
+       
         if len(args) == 1 and isinstance(args[0], dict):
             arg_dict = args[0]
         else:
@@ -345,89 +419,11 @@ class AlgoConfig():
             
         init_props = {AlgoConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() 
                       if k in AlgoConfig.py_jl_props.keys() }
-        self.jlObj = self.jl.AlgoConfig(*[], **init_props )
         
+        super().__init__( self.jl.AlgoConfig(*[], **init_props ) )
+
                 
-    def show(self):
-        print( self.jlObj )
-        
-    def print_stop_info(self):
-        print("\tStopping if either:")
-        print(f"\t\t• Number of iterations reaches {self.max_iter}.")
-        print(f"\t\t• Number of objective evaluations reaches {self.max_evals}.")
-        print(f"\t\t• Trust region radius Δ becomes smaller than delta_min = {self.delta_min}.")
-        print(f"\t\t• Trust region radius Δ becomes smaller than delta_critical = {self.delta_critical} AND")
-        print(f"\t\t  stepsize is smaller than {self.stepsize_min}.")
-        
-    def print_fin_info(self):
-        print(f"\tFinished after {self.n_iters} iterations and {self.n_evals} objective evaluations.")
-        print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
-     
-    # def scatter2_objectives(self, indices = [0,1]):
-    #     if len(indices) == 0:
-    #         return 
-    #     else:
-    #         f1 = self.values[ indices[0], : ]
-    #         if len(indices) == 1:
-    #             f2 = np.zeros( f1.shape )
-    #         else:
-    #             f2 = self.values[ indices[1], :]
-            
-    #     fig, ax = plt.subplots()
-        
-    #     ax.scatter( f1, f2)
-    #     ax.plot( f1[self.iter_indices], f2[self.iter_indices], "kd-" )
-        
-    @property 
-    def iter_data(self):
-        return self.jlObj.iter_data 
     
-    @property 
-    def iter_indices(self):
-        return self.iter_data.iterate_indices - 1
-    
-    @property 
-    def eval_sites(self):
-        return self.iter_data.sites_db 
-    
-    @property 
-    def eval_vectors(self): 
-        return self.iter_data.values_db 
-    
-    @property
-    def iter_sites(self):
-        return self.eval_sites[ self.iter_indices ]
-    
-    @property
-    def iter_vectors(self):
-        return self.eval_vectors[ self.iter_indices ]
-        
-    @property
-    def n_iters(self):
-        len_iter_array = len( self.jlObj.iter_data.iterate_indices )
-        return 0 if len_iter_array == 0 else len_iter_array - 1
-    
-    @property
-    def n_evals(self):
-        return len( self.jlObj.iter_data.values_db )
-    
-    @property 
-    def ρ_array(self):
-        return self.jlObj.iter_data.ρ_array
-    
-    @property 
-    def n_acceptable_steps(self):
-        return np.sum( self.ρ_array >= self.ν_accept )
-    
-    @property
-    def n_successful_steps(self):
-        return np.sum( self.ρ_array >= self.ν_success )
-    
-    # def save(self, filename = None):
-    #     self.eval("save_config")( self.jlObj, filename)
-        
-    # def load(self, filename):
-    #     self.jlObj = self.eval("load_config")(filename)
 
         
 # Set properties for AlgoConfig class dynamically

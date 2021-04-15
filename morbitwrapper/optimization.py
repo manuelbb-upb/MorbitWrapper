@@ -7,31 +7,34 @@ Created on Thu Feb 11 09:44:53 2021
 """
 
 from .utilities import tprint
-from .MOPClasses import MOP, AlgoConfig
+from .MOPClasses import MOP, GenericConfig
 from .globals import julia_main
 import numpy as np 
 
 def optimize( problem, x_0, cfg = None, debug_level = "Warn" ):
     # set debug level
-    jl = cfg.eval(f"""
+    jl = problem.eval(f"""
     import Logging;
     Logging.global_logger( Logging.ConsoleLogger(stderr, Logging.{debug_level}));
     """)
     
+    # TODO: uncomment for production
     # if not isinstance( problem, MOP ):
     #     tprint("Invalid `problem`... returning.")
     #     return
-    # if not cfg or not isinstance( cfg, AlgoConfig ):
-    #     tprint("Using default optimization settings.")
-    #     cfg = AlgoConfig()
+    
+    if not cfg:
+        cfg = GenericConfig()
+        tprint("Using default optimization settings.")
     if len(x_0) == 0:
         tprint("Need a non-empty starting array x_0.")
         return         
-    tprint("Using default optimization settings.")
+    
     cfg.print_stop_info() 
     
     x_0 = np.array(x_0).flatten() 
     jl = julia_main()
-    X, FX = jl.optimize_b( cfg.jlObj, problem.jlObj, x_0 )
+
+    X, FX = jl.optimize_b( cfg.jlObj, x_0 )
     tprint("Finished.")
     return X, FX

@@ -5,14 +5,15 @@ Created on Thu Jul 16 16:22:00 2020
 
 @author: manuelbb
 """
-#import os
-#os.chdir( os.path.dirname( __file__ ) )
 #%%
 import os
 os.chdir( os.path.join( os.path.dirname(__file__), ".." ) )
-import MorbitWrapper as mw
+import morbitwrapper as mw
 #%%
-#mw.set_MORBIT_SYS_IMG("/project_files/MorbitWrapper/Morbit.so") # path to an up-to-date sysimage for fast startup
+
+#mw.set_MORBIT_SYS_IMG("Morbit.so") # path to an up-to-date sysimage for fast startup
+#mw.set_JULIA_RUNTIME("/path/to/julia")
+#mw.set_JULIA_ENV("/path/where/Morbit/is/available")
 
 mop = mw.MOP(lb = [-5, -5], ub =[5,5])
 
@@ -35,4 +36,5 @@ conf = mw.AlgoConfig(
     all_objectives_descent = True 
 )
 
+#%%
 x, y = mw.optimize( mop, [3.0, 4.0], conf )

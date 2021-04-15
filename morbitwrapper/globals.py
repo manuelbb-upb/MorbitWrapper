@@ -7,11 +7,15 @@ Created on Thu Jul 16 16:40:36 2020
 """
 
 import os.path
+from julia import JuliaError
+
+MORBIT_REPO_URL = r"https://github.com/manuelbb-upb/Morbit.jl.git"
 
 JULIA_MAIN = None    
 
-# PROJECT SETTINGS (Defaults for Singularity Container)
-#JULIA_RUNTIME = None    # None if 'julia' is available in PATH; else provide path to Julia installation
+JULIA_RUNTIME = None    # None if 'julia' is available in PATH; else provide path to Julia installation
+
+JULIA_ENV = None
 
 MORBIT_SYS_IMG = None
 
@@ -23,6 +27,20 @@ def set_MORBIT_SYS_IMG( new_val ):
 
 def get_MORBIT_SYS_IMG():
     return MORBIT_SYS_IMG
+
+def set_JULIA_RUNTIME( new_val ):
+    global JULIA_RUNTIME
+    JULIA_RUNTIME = new_val
+
+def get_JULIA_RUNTIME():
+    return JULIA_RUNTIME
+
+def set_JULIA_ENV( new_val ):
+    global JULIA_ENV
+    JULIA_ENV = new_val
+
+def get_JULIA_ENV():
+    return JULIA_ENV
 
 def set_JULIA_MAIN( jl_instance ):
     global JULIA_MAIN 
@@ -37,6 +55,13 @@ def julia_main():
     if not jl:
         jl = initialize_julia()
     return jl
+
+def download_morbit(jlMain):
+    jlMain.eval("using Pkg;")
+    jlMain.eval("new_env = tempname();") 
+    jlMain.eval("Pkg.activate(new_env);")
+    jlMain.eval(f'Pkg.add(;url="{MORBIT_REPO_URL}")')
+    set_JULIA_ENV(jlMain.new_env)    
 
 def initialize_julia( ): 
     from .utilities import tprint
@@ -53,18 +78,29 @@ def initialize_julia( ):
     
     try:
         from julia.api import Julia
-        Julia( compiled_modules = False, sysimage = sysimage_path) # we have to to this twice somehow because PyJulia cannot handle custom sysimages well
+        Julia( runtime = get_JULIA_RUNTIME(), compiled_modules = False, sysimage = sysimage_path)
     except:
         "Could not load Julia. Maybe patch the environment."
         raise
     
     from julia import Main
 
+    # include "hack" to make symbols available on the python side
     Main.include( os.path.join( os.path.dirname( __file__ ) , "pycall_sym.jl" ) )
+    
     # loading MORBIT module
-    #Main.using("Pkg")
-    tprint("Loading Morbit module. If no sysimage was provided this will take some time.")
-    Main.using("Morbit")
+    try:
+        if not get_JULIA_ENV():
+            tprint("Loading Morbit module. If no sysimage was provided this will take some time.")
+            Main.using("Morbit")
+        else:
+            Main.using("Pkg");
+            Main.Pkg.activate( get_JULIA_ENV() )
+            Main.using("Morbit")            
+    except JuliaError:
+        tprint("Could not load Morbit. Downloading it from GitHub.")
+        download_morbit(Main)
+        Main.using("Morbit")
     
     tprint("Julia runtime all set up!")
     
