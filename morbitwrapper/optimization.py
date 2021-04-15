@@ -35,6 +35,6 @@ def optimize( problem, x_0, cfg = None, debug_level = "Warn" ):
     x_0 = np.array(x_0).flatten() 
     jl = julia_main()
 
-    X, FX = jl.optimize_b( cfg.jlObj, x_0 )
+    X, FX, id = jl.optimize( problem.jlObj , x_0, algo_config = cfg.jlObj)
     tprint("Finished.")
     return X, FX

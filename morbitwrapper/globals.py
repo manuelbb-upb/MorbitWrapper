@@ -95,7 +95,7 @@ def initialize_julia( ):
             Main.using("Morbit")
         else:
             Main.using("Pkg");
-            Main.Pkg.activate( get_JULIA_ENV() )
+            Main.eval(f'Pkg.activate("{get_JULIA_ENV()}")')
             Main.using("Morbit")            
     except JuliaError:
         tprint("Could not load Morbit. Downloading it from GitHub.")

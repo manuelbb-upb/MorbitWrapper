@@ -220,7 +220,7 @@ class MOP():
             
     @property
     def n_objfs(self):
-        return self.jlObj.n_objfs 
+        return self.eval("Morbit.num_objectives")(self.jlObj)
     
     def _prepare_args(self, allowed_properties, *args, **kwargs): 
         arg_dict0 = get_kwargs(allowed_properties, *args, **kwargs)
@@ -419,11 +419,9 @@ class AlgoConfig( GenericConfig ):
             
         init_props = {AlgoConfig.py_jl_props[k] : v for (k,v) in arg_dict.items() 
                       if k in AlgoConfig.py_jl_props.keys() }
-        
-        super().__init__( self.jl.AlgoConfig(*[], **init_props ) )
+        jl = julia_main()
+        super().__init__( jl.AlgoConfig(*[], **init_props ) )
 
-                
-    
 
         
 # Set properties for AlgoConfig class dynamically
