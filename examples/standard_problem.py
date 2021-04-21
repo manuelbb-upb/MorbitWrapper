@@ -11,10 +11,6 @@ os.chdir( os.path.join( os.path.dirname(__file__), ".." ) )
 import morbitwrapper as mw
 #%%
 
-mw.set_MORBIT_SYS_IMG("/home/manuelbb/Desktop/Morbit.sysimg") # path to an up-to-date sysimage for fast startup
-mw.set_JULIA_RUNTIME("/opt/julia-1.6.0/bin/julia")
-#mw.set_JULIA_ENV("/home/manuelbb/.julia/dev/Morbit")
-
 mop = mw.MOP(lb = [-5, -5], ub =[5,5])
 
 def f1(x):

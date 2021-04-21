@@ -146,8 +146,15 @@ def load_morbit( jlMain ):
 def _make_precompile_file( temp_work_dir ):
     pre_script_path = os.path.join(temp_work_dir, "pre_script")
     with open( pre_script_path, "w+" ) as fp:
-        fp.write("using Pkg;\n")
-        fp.write('Pkg.test("Morbit");')
+        #fp.write("using Pkg;\n")
+        #fp.write('Pkg.test("Morbit");')
+        fp.write("""
+        import Morbit;
+        using Pkg;
+        test_dir = joinpath(pkgdir(Morbit), "test");
+        Pkg.activate(test_dir);
+        include( joinpath(test_dir, "runtests.jl") );
+        """)
     
     return pre_script_path
 
@@ -168,8 +175,8 @@ def compile_base_img( temp_work_dir ):
                cwd=temp_work_dir)
     return morbit_img_path
 
-def make_sysimage( out_path = get_MORBIT_SYS_IMG() ):
-    
+def make_sysimage():
+    out_path = get_MORBIT_SYS_IMG()
     try:
         with tempfile.TemporaryDirectory() as twd:
             
