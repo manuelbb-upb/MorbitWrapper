@@ -11,9 +11,9 @@ os.chdir( os.path.join( os.path.dirname(__file__), ".." ) )
 import morbitwrapper as mw
 #%%
 
-#mw.set_MORBIT_SYS_IMG("Morbit.so") # path to an up-to-date sysimage for fast startup
-#mw.set_JULIA_RUNTIME("/path/to/julia")
-mw.set_JULIA_ENV("/home/manuelbb/.julia/dev/Morbit")
+mw.set_MORBIT_SYS_IMG("/home/manuelbb/Desktop/Morbit.sysimg") # path to an up-to-date sysimage for fast startup
+mw.set_JULIA_RUNTIME("/opt/julia-1.6.0/bin/julia")
+#mw.set_JULIA_ENV("/home/manuelbb/.julia/dev/Morbit")
 
 mop = mw.MOP(lb = [-5, -5], ub =[5,5])
 
@@ -33,7 +33,8 @@ mop.add_rbf_vec_objective(F, n_out = 2)
 
 conf = mw.AlgoConfig(
     max_iter = 20, 
-    all_objectives_descent = True 
+    strict_backtracking = True,
+    strict_acceptance_test = True,
 )
 
 #%%

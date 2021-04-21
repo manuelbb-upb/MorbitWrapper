@@ -309,6 +309,14 @@ optional = false
 python-versions = ">=2.7"
 
 [[package]]
+name = "find-libpython"
+version = "0.2.0"
+description = "Finds the libpython associated with your environment, wherever it may be hiding"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "flake8"
 version = "3.8.4"
 description = "the modular source code checker: pep8 pyflakes and co"
@@ -3139,7 +3147,7 @@ test = ["pytest"]
 
 [[package]]
 name = "spyder"
-version = "5.0.0"
+version = "5.0.1"
 description = "The Scientific Python Development Environment"
 category = "dev"
 optional = false
@@ -3175,7 +3183,7 @@ pyxdg = {version = ">=0.26", markers = "platform_system == \"Linux\""}
 pyzmq = ">=17"
 qdarkstyle = "3.0.2"
 qstylizer = ">=0.1.10"
-qtawesome = ">=0.5.7"
+qtawesome = ">=1.0.2"
 qtconsole = ">=5.0.3"
 qtpy = ">=1.5.0"
 sphinx = ">=0.6.6"
@@ -3406,7 +3414,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "019b3b92f47dd59a7e9c34d70a4bda5903f3e68384b75c50d369b8ac80efc3c0"
+content-hash = "3c27d1dd5c51ee50b7d6c303f28149b575ca638eb5bf004dbd579a2f6a016d6d"
 
 [metadata.files]
 alabaster = [
@@ -3573,6 +3581,10 @@ docutils = [
 entrypoints = [
     {file = "entrypoints-0.3-py2.py3-none-any.whl", hash = "sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19"},
     {file = "entrypoints-0.3.tar.gz", hash = "sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451"},
+]
+find-libpython = [
+    {file = "find_libpython-0.2.0-py3-none-any.whl", hash = "sha256:857e7207d6b5aabd8e05419a67a2003efc43f2986fb02766932bd91a50a76ea8"},
+    {file = "find_libpython-0.2.0.tar.gz", hash = "sha256:aba5d41aa4c3e245a536d397a5f0e0c12c20e7ab2ada398c4ab07ff685f91ff9"},
 ]
 flake8 = [
     {file = "flake8-3.8.4-py2.py3-none-any.whl", hash = "sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839"},
@@ -4783,8 +4795,8 @@ sphinxcontrib-serializinghtml = [
     {file = "sphinxcontrib_serializinghtml-1.1.4-py2.py3-none-any.whl", hash = "sha256:f242a81d423f59617a8e5cf16f5d4d74e28ee9a66f9e5b637a18082991db5a9a"},
 ]
 spyder = [
-    {file = "spyder-5.0.0-py3-none-any.whl", hash = "sha256:2cbb4c6df41e6de12edc19175d4e13040549e2dc45ea9716c16d4cc1fa680d2f"},
-    {file = "spyder-5.0.0.tar.gz", hash = "sha256:0028f1fc347bf9085df9d45a82db515e91d676a259de1f3144c50bccd12c5f9a"},
+    {file = "spyder-5.0.1-py3-none-any.whl", hash = "sha256:6e18da4b0dec4b33e0abdc2ddec984a440f8fd2556afdc1c010879b49f12bd45"},
+    {file = "spyder-5.0.1.tar.gz", hash = "sha256:ceef74cd82ad24e0fc981fa39733aade55efc8ce80aa6f8249f4ac4b35748be1"},
 ]
 spyder-kernels = [
     {file = "spyder-kernels-2.0.1.tar.gz", hash = "sha256:d69ca78e10b6783b506139668847368c7ace6676a771d75efd826d239597c1e9"},
