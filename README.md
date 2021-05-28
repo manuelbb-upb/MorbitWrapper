@@ -2,7 +2,7 @@
 Python wrapper for Morbit julia module.
 Basic functionalities of the [original module](https://github.com/manuelbb-upb/Morbit) are wrapped and you 
 can refer to the README and doucmentation of the Julia package for more detailed description of the internal parameters.  
-Note, the Python constructors are written to accept the parametrs in a more verbose way: 
+Note, the Python constructors are written to accept the parameters in a more verbose way: 
 `mu` instead of `μ` and `delta_init` instead of `Δ₀`.
 
 ## Basic usage 
