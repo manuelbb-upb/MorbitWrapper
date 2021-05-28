@@ -148,13 +148,14 @@ def _make_precompile_file( temp_work_dir ):
     with open( pre_script_path, "w+" ) as fp:
         #fp.write("using Pkg;\n")
         #fp.write('Pkg.test("Morbit");')
-        fp.write("""
-        import Morbit;
-        using Pkg;
-        test_dir = joinpath(pkgdir(Morbit), "test");
-        Pkg.activate(test_dir);
-        include( joinpath(test_dir, "runtests.jl") );
-        """)
+         fp.write("""
+         using Pkg;
+         using Morbit;
+         test_dir = joinpath(pkgdir(Morbit), "test");
+         test_load_dir = joinpath(@__DIR__, "test_env", "Project.toml");
+         push!(LOAD_PATH, test_load_dir)
+         include( joinpath(test_dir, "runtests.jl") );
+         """)
     
     return pre_script_path
 

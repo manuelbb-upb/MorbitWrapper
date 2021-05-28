@@ -11,9 +11,15 @@ import numpy as np
 from inspect import isfunction
 from .globals import julia_main
 from uuid import uuid4
+
+from .utilities import tprint
+
+
 try:
     global plt
     import matplotlib.pyplot as plt
+    from matplotlib import cm
+    import matplotlib.patches as mpatches
 except ModuleNotFoundError:
     print("Matplotlib not found in current environment. Plotting will not work")
     global plt 
@@ -56,13 +62,12 @@ def wrap_func( func ):
 
 def forbid_autodiff( arg_dict ):
     jl = julia_main()
-    for g in ["grad", "gradient", "gradients"]:
+    for g in ["grad", "gradient", "gradients", "jacobian"]:
         if g in arg_dict.keys() and (arg_dict[g] == "autodiff" or arg_dict[g] == jl.Symbol("autodiff")):
             print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
             arg_dict.pop(g)
     else:
         print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
-
     
     arg_dict["gradients"] = jl.Symbol("fdm")
     return
@@ -217,6 +222,8 @@ class MOP():
         else:
             print("Number of variables must be specified for unconstrained problems.")
             return
+        
+        self.iterDataObj = None
             
     @property
     def n_objfs(self):
@@ -234,7 +241,10 @@ class MOP():
     
     def _add_objective(self, func, cfgClass, *args, **kwargs):
         arg_dict, batch_eval = self._prepare_args(cfgClass.py_jl_props, *args, **kwargs)
+        if cfgClass == ExactConfig:
+            forbid_autodiff(arg_dict) 
         cfg = cfgClass(*[], **arg_dict) 
+
         return self._add_objective_jl(func, cfg, batch_eval)
     
     def _add_vec_objective_jl(self, func, cfg, can_batch = False, n_out = -1):
@@ -283,65 +293,41 @@ class MOP():
     
     def add_rbf_vec_objective(self, func, *args, **kwargs ):
         return self._add_vec_objective( func, RbfConfig, *args, **kwargs )
-            
-class GenericConfig():
-    def __init__(self, jlObj = None):
-        self.jl = julia_main()
-        self.eval = self.jl.eval
+              
+    @property 
+    def iter_data(self):
+         return self.iterDataObj
+    
+    @property 
+    def eval_sites(self):
+        if self.iterDataObj:
+            return self.eval("Morbit.get_sites ∘ Morbit.db")( self.iterDataObj )
+    
+    @property 
+    def eval_vectors(self): 
+        if self.iterDataObj:
+            return self.eval("Morbit.get_values ∘ Morbit.db")( self.iterDataObj )
+    
+    @property
+    def iter_sites(self):
+        if self.iterDataObj:
+            return self.eval("Morbit.get_iterate_sites ∘ Morbit.db")( self.iterDataObj )
+    
+    @property
+    def iter_vectors(self):
+        if self.iterDataObj:
+            return self.eval("Morbit.get_iterate_values ∘ Morbit.db")( self.iterDataObj )
         
-        if not jlObj:
-            jlObj = self.eval("Morbit.EmptyConfig()")
-            
-        self.jlObj = jlObj
-       
-    def show(self):
-        print( self.jlObj )
-        
-    def print_stop_info(self):
-        print("\tTODO: Stopping Info for new interface.")
-        # print(f"\t\t• Number of iterations reaches {self.max_iter}.")
-        # print(f"\t\t• Number of objective evaluations reaches {self.max_evals}.")
-        # print(f"\t\t• Trust region radius Δ becomes smaller than delta_min = {self.delta_min}.")
-        # print(f"\t\t• Trust region radius Δ becomes smaller than delta_critical = {self.delta_critical} AND")
-        # print(f"\t\t  stepsize is smaller than {self.stepsize_min}.")
-        
-    def print_fin_info(self):
-        print("\tTODO: Finishing Info for new interface.")
-        # print(f"\tFinished after {self.n_iters} iterations and {self.n_evals} objective evaluations.")
-        # print(f"\tThere were {self.n_acceptable_steps} acceptable and {self.n_successful_steps} successful iterations.")
-             
-    # @property 
-    # def iter_data(self):
-    #     return self.jlObj.iter_data 
-    
-    # @property 
-    # def iter_indices(self):
-    #     return self.iter_data.iterate_indices - 1
-    
-    # @property 
-    # def eval_sites(self):
-    #     return self.iter_data.sites_db 
-    
-    # @property 
-    # def eval_vectors(self): 
-    #     return self.iter_data.values_db 
-    
-    # @property
-    # def iter_sites(self):
-    #     return self.eval_sites[ self.iter_indices ]
-    
-    # @property
-    # def iter_vectors(self):
-    #     return self.eval_vectors[ self.iter_indices ]
-        
-    # @property
-    # def n_iters(self):
+    @property
+    def n_iters(self):
+        if self.iterDataObj:
+            return self.eval("Morbit.num_iterations")( self.iterDataObj )
     #     len_iter_array = len( self.jlObj.iter_data.iterate_indices )
     #     return 0 if len_iter_array == 0 else len_iter_array - 1
     
-    # @property
-    # def n_evals(self):
-    #     return len( self.jlObj.iter_data.values_db )
+    @property
+    def n_evals(self):
+         return len( self.iter_sites )
     
     # @property 
     # def ρ_array(self):
@@ -360,6 +346,89 @@ class GenericConfig():
         
     # def load(self, filename):
     #     self.jlObj = self.eval("load_config")(filename)
+    
+    def plot_objectives(self, objf_indices = None, iter_indices = None, scale = True):
+        if self.iter_data and plt:
+            fig, ax = plt.subplots()
+            
+            if not iter_indices: 
+                iter_indices = list(range(self.n_iters))
+                
+            if not objf_indices:
+                objf_indices = list(range(self.n_objfs))
+                
+            n_iter = len(iter_indices)
+                
+            # scale each dimension of each value vector
+            Y = [ v[objf_indices] for v in self.iter_vectors ]
+            Ymin = np.min( Y )
+            if scale:   
+                ax.set_title("Objective Values (Scaled)")
+                LB = np.min( Y, axis = 0 )
+                UB = np.max( Y, axis = 0 )
+                W = UB - LB
+                Ys = [ (y - LB)/W for y in Y ]
+            else:
+                ax.set_title("Objective Values")
+                Ys = Y
+            
+            colors = [ cm.coolwarm( j ) for j in np.linspace(0,1, n_iter ) ]
+            j = 0
+            for (j,i) in enumerate(iter_indices):
+                y = Ys[i]
+                ax.fill_between(range(len(y)), Ymin, y, color = colors[j])
+                
+            ax.set_xticks( range(len(objf_indices) ))
+            ax.set_xticklabels( [str(i) for i in objf_indices] )
+            ax.set_xlabel("Objective Indices")
+            
+            leg_indices = np.linspace(0, n_iter - 1, min(10, n_iter), dtype = int)
+            
+            leg_handles = [ 
+                mpatches.Patch(
+                    color=colors[j], 
+                    label=f"It. {iter_indices[j]}") 
+                for j in leg_indices 
+            ]
+            ax.legend( bbox_to_anchor = (1.05, 1), loc = "upper left", handles = leg_handles )
+            
+            fig.show()
+            
+    def plot_iterates(self, dims = [0,1]):
+        # TODO: scaled and unscaled?
+        if self.iter_data and plt:
+            fig, ax = plt.subplots()
+            ax.set_title("Iterates and Evaluation Sites.")
+            all_sites = [ v[dims] for v in self.eval_sites ]
+            it_sites = [ v[dims] for v in self.iter_sites ]
+            
+            ax.scatter( [v[0] for v in all_sites ], [v[1] for v in all_sites], color = "lightgray" )
+            ax.plot( [v[0] for v in it_sites ], [v[1] for v in it_sites], "o-")
+            ax.set_xlabel(f"var {dims[0]}")
+            ax.set_ylabel(f"var {dims[1]}")
+            fig.show()
+            
+    # TODO 
+    def plot_objective_iterates(self, objf_indices = [0,1]):
+        # Plot evaluations of objectives with indices `objf_indices` 
+        # and iterations in objective space, similar to `plot_iterates`.
+        pass
+            
+    
+            
+class GenericConfig():
+    def __init__(self, jlObj = None):
+        self.jl = julia_main()
+        self.eval = self.jl.eval
+        
+        if not jlObj:
+            jlObj = self.eval("Morbit.EmptyConfig()")
+            
+        self.jlObj = jlObj
+       
+    def show(self):
+        print( self.jlObj )
+        
 
 class AlgoConfig( GenericConfig ):
     """A wrapper class for the AlgoConfig structure provided by Morbit in Julia.
