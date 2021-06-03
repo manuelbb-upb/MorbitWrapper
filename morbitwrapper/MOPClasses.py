@@ -327,7 +327,7 @@ class MOP():
     
     @property
     def n_evals(self):
-         return len( self.iter_sites )
+         return len( self.eval_sites )
     
     # @property 
     # def ρ_array(self):
