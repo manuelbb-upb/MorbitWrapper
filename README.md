@@ -29,7 +29,7 @@ If Morbit is not available in the environment, then the wrapper will try to
 Depending on the file system permissions this could error.
 The default setting is `None` which leads to a temporary environment being created.
 
-!!! note 
+**Note**
     Due to Julia being JIT compiled, the initial startup time might be long.
     To overcome this, a sysimage with `Morbit.jl` and `PyCall` can be compiled.
     Simply specify `mw.set_MORBIT_SYS_IMG( target_path )`.
@@ -37,12 +37,12 @@ The default setting is `None` which leads to a temporary environment being creat
     and then two sysimage have to be compiled on top of that).  
     If, at some point the sysimage has to be updated, simply delete the output file.
     To deactive the image, delete the code snippet or use 
-    ```python
+    ```
     mw.set_MORBIT_SYS_IMG( None )
     ```
     
 The Julia depot path can be set via `mw.set_JULIA_DEPOT_PATH`. 
-This can be used to setup a self-contained Project environment.
+This can be used to setup a self-contained project environment.
 
 All setings can be set in a JSON file and then be loaded with `mw.load_settings`.
 A possible settings file could look like this:
