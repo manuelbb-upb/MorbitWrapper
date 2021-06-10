@@ -18,6 +18,7 @@ from julia.sysimage import build_sysimage
 from find_libpython import find_libpython
 import tempfile
 from julia.sysimage import install_packagecompiler_cmd, check_call
+import logging
 
 
 MORBIT_REPO_URL = r"https://github.com/manuelbb-upb/Morbit.jl.git"
@@ -46,6 +47,8 @@ def get_MORBIT_SYS_IMG():
 def set_JULIA_RUNTIME( new_val ):
     global JULIA_RUNTIME
     JULIA_RUNTIME = new_val
+    logging.info( f"Julia RUNTIME set to {JULIA_RUNTIME}" )
+
 
 def get_JULIA_RUNTIME():
     return JULIA_RUNTIME
@@ -60,6 +63,7 @@ def get_JULIA_RUNTIME_NAME():
 def set_JULIA_ENV( new_val ):
     global JULIA_ENV
     JULIA_ENV = new_val
+    logging.info( f"Julia Environment set to {JULIA_ENV}" )
 
 def get_JULIA_ENV():
     return JULIA_ENV
@@ -76,6 +80,7 @@ def set_JULIA_DEPOT_PATH( new_val ):
     global JULIA_DEPOT_PATH
     JULIA_DEPOT_PATH = new_val
     os.environ["JULIA_DEPOT_PATH"] = new_val
+    logging.info( f"Julia Depot Path set to {JULIA_DEPOT_PATH}" )
 
 def get_JULIA_DEPOT_PATH():
     global JULIA_DEPOT_PATH
@@ -209,7 +214,7 @@ def init_api(sysimage_path):
     
     rebuild_pycall = False
     try: 
-        jlinfo = JuliaInfo.load()
+        jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME())
         if not jlinfo.libpython_path == find_libpython():
             rebuild_pycall = True
     except JuliaError:

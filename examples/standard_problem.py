@@ -11,10 +11,10 @@ os.chdir( os.path.join( os.path.dirname(__file__), ".." ) )
 import morbitwrapper as mw
 #%%
 
-# mw.set_MORBIT_SYS_IMG("pycall_morbit.sysimg")
+# mw.set_MORBIT_SYS_IMG(os.path.join( os.path.dirname(__file__), "pycall_morbit.sysimg") )
 mw.set_JULIA_ENV("@v1.6")   # I have Morbit dev'ed in the default environment
 
-mop = mw.MOP(lb = [-5, -5], ub =[5,5])
+mop = mw.MOP([-5, -5], [5,5] )
 
 def f1(x):
     return (x[0]-1)**2 + (x[1]-1)**2
@@ -23,9 +23,9 @@ f2 = lambda x : (x[0]+1)**2 + (x[1]+1)**2
 df2 = lambda x : [ 2*(x[0]+1), 2*(x[1]+1) ]
 
 # You can add as single objectives that are modelled:
-#mop.add_lagrange_objective(f1, degree=2)
-#mop.add_rbf_objective(f1)
-#mop.add_cheap_objective(f2, grad = df2)
+# mop.add_lagrange_objective(f1, degree=2)
+# mop.add_rbf_objective(f1)
+# mop.add_cheap_objective(f2, grad = df2)
 
 # Or use a vector valued objective.
 F = lambda x : [f1(x), f2(x)]
