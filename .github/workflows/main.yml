@@ -7,8 +7,7 @@ on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    tags: 'v*'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -41,14 +40,16 @@ jobs:
       - name: Build
         run: |
           cd $GITHUB_WORKSPACE
-          poetry install
-          poetry build
+          poetry install --no-dev
+          poetry build -n
+      
+      - name: Release
+        uses: meeDamian/github-release@2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: $GITHUB_WORKSPACE/dist
+          tag: 'v0.0.2-dev'
+          gzip: false
           
-      - name: Add and Commit
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add .
-          git commit -m "auto generated builds"
-          git push
+        
         
