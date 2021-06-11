@@ -7,7 +7,8 @@ Created on Thu Jul 16 16:22:00 2020
 """
 #%%
 import os
-os.chdir( os.path.join( os.path.dirname(__file__), ".." ) )
+import sys 
+sys.path.append( os.path.join( os.path.dirname(__file__), ".." ) )
 import morbitwrapper as mw
 #%%
 
