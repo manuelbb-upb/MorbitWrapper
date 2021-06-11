@@ -214,7 +214,7 @@ def init_api(sysimage_path):
     
     rebuild_pycall = False
     try: 
-        jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME())
+        jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME_NAME())
         if not jlinfo.libpython_path == find_libpython():
             rebuild_pycall = True
     except JuliaError:
