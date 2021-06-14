@@ -53,7 +53,6 @@ def wrap_func( func ):
         return PC.pycall(
             {tmp_name},
             PC.PyAny,
-            # Union{{ Real, Vector{{R}} where R<:Real, Vector{{Vector{{R}}}} where R<:Real }},
             x
         )
     end
