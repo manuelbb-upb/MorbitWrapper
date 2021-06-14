@@ -8,8 +8,12 @@ Created on Thu Jul 16 16:22:00 2020
 #%%
 import os
 import sys 
+
+# comment the following line if morbitwrapper has been installed globally
 sys.path.append( os.path.join( os.path.dirname(__file__), ".." ) )
+
 import morbitwrapper as mw
+
 #%%
 
 # mw.set_MORBIT_SYS_IMG(os.path.join( os.path.dirname(__file__), "pycall_morbit.sysimg") )

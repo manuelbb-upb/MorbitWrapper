@@ -6,6 +6,8 @@
 
 import sys 
 import os 
+
+# comment the following line if morbitwrapper has been installed globally:
 sys.path.append( os.path.join( os.path.dirname( __file__ ), ".." ) )
 
 import morbitwrapper as mw
