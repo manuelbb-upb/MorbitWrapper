@@ -20,7 +20,6 @@ import tempfile
 from julia.sysimage import install_packagecompiler_cmd, check_call
 import logging
 
-
 MORBIT_REPO_URL = r"https://github.com/manuelbb-upb/Morbit.jl.git"
 MORBIT_UUID = "88936782-c8cd-4a0f-b259-ffb12bfd2869"
 
@@ -85,7 +84,6 @@ def set_JULIA_DEPOT_PATH( new_val ):
 def get_JULIA_DEPOT_PATH():
     global JULIA_DEPOT_PATH
     return JULIA_DEPOT_PATH
-
 
 def load_settings( json_path ):
     
@@ -217,16 +215,19 @@ def init_api(sysimage_path):
         jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME_NAME())
         if not jlinfo.libpython_path == find_libpython():
             rebuild_pycall = True
-    except JuliaError:
+    except JuliaError as e:
+        logging.info("julia error")
         rebuild_pycall = True
-        
+    
     if rebuild_pycall:
-        install()
+        logging.info("rebuilding pycall")
+        install(julia = get_JULIA_RUNTIME_NAME())
+        logging.info("rebuilding done")
        
     try:
         Julia( runtime = get_JULIA_RUNTIME(), compiled_modules = False, sysimage = sysimage_path)
     except JuliaError as e:
-        print("Could not load Julia.")
+        logging.info("Could not load Julia.")
         raise e
 
 def initialize_julia(): 
