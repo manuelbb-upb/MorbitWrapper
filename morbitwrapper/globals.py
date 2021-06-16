@@ -192,10 +192,11 @@ def make_sysimage():
                 base_sysimage = base_img,
                 compiler_env = compiler_env
                 )
+            return out_path
     except Exception as e:
         logging.warn("Could not generate sysimage.")
         logging.warn(e)
-    return out_path
+        return None
     
 from julia.find_libpython import linked_libpython
 
@@ -217,17 +218,14 @@ def init_api(sysimage_path):
         raise e
 
 def initialize_julia(): 
-    MORBIT_SYS_IMG = get_MORBIT_SYS_IMG()
-    if MORBIT_SYS_IMG:
+    sysimage_path = get_MORBIT_SYS_IMG()
+    if sysimage_path:
         if os.path.isfile( MORBIT_SYS_IMG ):
             tprint(f"\tUsing sysimage at {MORBIT_SYS_IMG}")
-            sysimage_path = MORBIT_SYS_IMG
         else:
             tprint(f"\tGoing to compile a sysimage at {MORBIT_SYS_IMG}")
-            make_sysimage()
-            sysimage_path = None
-    else:    
-        sysimage_path = None
+            sysimage_path = make_sysimage()
+    if not sysimage_path:
         tprint("\tNo sysimage specified.")
     
     tprint("MOP: Initializing Julia runtime. First time might take a bit.")
