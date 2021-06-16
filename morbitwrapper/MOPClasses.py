@@ -62,13 +62,16 @@ def wrap_func( func ):
 def forbid_autodiff( arg_dict ):
     jl = julia_main()
     for g in ["grad", "gradient", "gradients", "jacobian"]:
-        if g in arg_dict.keys() and (arg_dict[g] == "autodiff" or arg_dict[g] == jl.Symbol("autodiff")):
-            print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
-            arg_dict.pop(g)
+        if g in arg_dict.keys():
+            if (arg_dict[g] == "autodiff" or arg_dict[g] == jl.Symbol("autodiff")):
+                print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
+                arg_dict.pop(g)
+            else:
+                break
     else:
         print("WARNING Automatic differentiation of Python functions not supported. Using Finite Differences instead.\nYou can also provide a gradient function with the keyword `grad`.")
     
-    arg_dict["gradients"] = jl.Symbol("fdm")
+        arg_dict["gradients"] = jl.Symbol("fdm")
     return
             
 
