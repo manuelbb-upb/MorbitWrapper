@@ -11,16 +11,15 @@ from pathlib import Path
 import os.path
 from julia import JuliaError, Julia
 from julia.api import JuliaInfo
-#from julia.tools import build_pycall
 from .utilities import tprint
 from julia import install
+from julia.tools import build_pycall
 from julia.sysimage import build_sysimage
-from find_libpython import find_libpython
 import tempfile
 from julia.sysimage import install_packagecompiler_cmd, check_call
 import logging
 
-MORBIT_REPO_URL = r"https://github.com/manuelbb-upb/Morbit.jl.git"
+MORBIT_REPO_URL = r"https://github.com/manuelbb-upb/Morbit.jl.git#v2.1.8"
 MORBIT_UUID = "88936782-c8cd-4a0f-b259-ffb12bfd2869"
 
 JULIA_MAIN = None    
@@ -31,7 +30,6 @@ JULIA_ENV = None
 
 MORBIT_SYS_IMG = None
 
-#JULIA_LOAD_PATH = None
 JULIA_DEPOT_PATH = None
 
 # some setter function to change module variables from the outside    
@@ -194,40 +192,27 @@ def make_sysimage():
                 compiler_env = compiler_env
                 )
     except Exception as e:
-        print("Could not generate sysimage.")
-        print(e)
+        logging.warn("Could not generate sysimage.")
+        logging.warn(e)
     return out_path
     
     
 def init_api(sysimage_path):
-    # First, check if PyCall is installed &&
-    # from julia.api import JuliaInfo
-    # from find_libpython import find_libpython()
-    # jlinfo = JuliaInfo.load()
-    # jlinfo.libpython == find_libpython() 
-    #
-    # if not successful:
-    # from julia.tools import build_pycall
-    # build_pycall()
+
+    jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME_NAME())
     
-    rebuild_pycall = False
-    try: 
-        jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME_NAME())
-        if not jlinfo.libpython_path == find_libpython():
-            rebuild_pycall = True
-    except JuliaError as e:
-        logging.info("julia error")
-        rebuild_pycall = True
-    
-    if rebuild_pycall:
-        logging.info("rebuilding pycall")
-        install(julia = get_JULIA_RUNTIME_NAME())
-        logging.info("rebuilding done")
+    if not jlinfo.is_compatible_python():
+        if not jlinfo.libpython_path:
+            logging.info("PyCall does not seem to be installed. Trying to remedy this fact...")
+            install( julia = get_JULIA_RUNTIME_NAME() )
+        else:
+            logging.info("PyCall not compatbile, rebuilding...")
+            build_pycall( julia = get_JULIA_RUNTIME_NAME() )     
        
     try:
         Julia( runtime = get_JULIA_RUNTIME(), compiled_modules = False, sysimage = sysimage_path)
     except JuliaError as e:
-        logging.info("Could not load Julia.")
+        logging.warn("Could not load Julia.")
         raise e
 
 def initialize_julia(): 
