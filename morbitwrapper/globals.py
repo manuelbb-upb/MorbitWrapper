@@ -6,6 +6,7 @@ Created on Thu Jul 16 16:40:36 2020
 @author: manuelbb
 """
 
+from sys import executable
 import json
 from pathlib import Path
 import os.path
@@ -196,18 +197,18 @@ def make_sysimage():
         logging.warn(e)
     return out_path
     
-    
+from julia.find_libpython import linked_libpython
+
 def init_api(sysimage_path):
 
     jlinfo = JuliaInfo.load(julia = get_JULIA_RUNTIME_NAME())
     
-    if not jlinfo.is_compatible_python():
-        if not jlinfo.libpython_path:
-            logging.info("PyCall does not seem to be installed. Trying to remedy this fact...")
-            install( julia = get_JULIA_RUNTIME_NAME() )
-        else:
-            logging.info("PyCall not compatbile, rebuilding...")
-            build_pycall( julia = get_JULIA_RUNTIME_NAME() )     
+    if not jlinfo.libpython_path:
+        logging.info("PyCall does not seem to be installed. Trying to remedy this fact...")
+        install( julia = get_JULIA_RUNTIME_NAME() )
+    elif not os.path.samefile( jlinfo.python, executable ):
+        logging.info("PyCall not compatbile, rebuilding...")
+        build_pycall( julia = get_JULIA_RUNTIME_NAME() )     
        
     try:
         Julia( runtime = get_JULIA_RUNTIME(), compiled_modules = False, sysimage = sysimage_path)
