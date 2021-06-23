@@ -15,6 +15,7 @@ from .globals import load_settings, make_sysimage
 from .globals import set_MORBIT_SYS_IMG, get_MORBIT_SYS_IMG, set_JULIA_ENV
 from .globals import get_JULIA_ENV, set_JULIA_RUNTIME, get_JULIA_RUNTIME, get_JULIA_RUNTIME_NAME
 from .globals import get_JULIA_DEPOT_PATH, set_JULIA_DEPOT_PATH
+from .globals import set_FORCE_PYCALL_REBUILD, get_FORCE_PYCALL_REBUILD
 from .globals import julia_main
 
 #NOTE

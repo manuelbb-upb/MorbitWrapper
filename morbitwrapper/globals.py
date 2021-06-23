@@ -33,6 +33,8 @@ MORBIT_SYS_IMG = None
 
 JULIA_DEPOT_PATH = None
 
+FORCE_PYCALL_REBUILD = False
+
 # some setter function to change module variables from the outside    
 
 def set_MORBIT_SYS_IMG( new_val ):
@@ -83,6 +85,14 @@ def set_JULIA_DEPOT_PATH( new_val ):
 def get_JULIA_DEPOT_PATH():
     global JULIA_DEPOT_PATH
     return JULIA_DEPOT_PATH
+
+def set_FORCE_PYCALL_REBUILD( val ):
+    global FORCE_PYCALL_REBUILD
+    FORCE_PYCALL_REBUILD = val 
+
+def get_FORCE_PYCALL_REBUILD( val ):
+    global FORCE_PYCALL_REBUILD
+    return FORCE_PYCALL_REBUILD 
 
 def load_settings( json_path ):
     
@@ -207,9 +217,9 @@ def init_api(sysimage_path):
     if not jlinfo.libpython_path:
         logging.info("PyCall does not seem to be installed. Trying to remedy this fact...")
         install( julia = get_JULIA_RUNTIME_NAME() )
-    elif not os.path.samefile( jlinfo.python, executable ):
+    elif get_FORCE_PYCALL_REBUILD or not os.path.isfile(jlinfo.python) or not os.path.samefile( jlinfo.python, executable ):
         logging.info("PyCall not compatbile, rebuilding...")
-        build_pycall( julia = get_JULIA_RUNTIME_NAME() )     
+        build_pycall( julia = get_JULIA_RUNTIME_NAME(), quiet = True )     
        
     try:
         Julia( runtime = get_JULIA_RUNTIME(), compiled_modules = False, sysimage = sysimage_path)
